@@ -1,0 +1,8 @@
+# game data from Bodycam (Reissad Studio): never commit
+Core/BaseTables/
+# build output
+App/bin/
+App/obj/
+out/
+*.exe
+global.json

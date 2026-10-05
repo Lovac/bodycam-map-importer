@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- WinForms app for .NET Framework 4.8, built with the dotnet SDK. C# 5 so the old csc.exe can build it too. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>5</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <AssemblyName>BodycamMapInstaller</AssemblyName>
+    <RootNamespace>BodycamMapInstaller</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <Deterministic>true</Deterministic>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <GenerateSupportedRuntime>true</GenerateSupportedRuntime>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <Version>0.1.0</Version>
+    <FileVersion>0.1.0.0</FileVersion>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <Product>Bodycam Map Installer</Product>
+    <AssemblyTitle>Bodycam Map Installer</AssemblyTitle>
+    <Description>Installs and removes custom Bodycam maps, each with its own card in Play &gt; Custom.</Description>
+    <Company>Lovac</Company>
+    <Copyright>Lovac</Copyright>
+  </PropertyGroup>
+
+  <!-- Developer version (-p:BcmiDev=true): adds the .uproject build mode. The player version does not include it. -->
+  <PropertyGroup Condition="'$(BcmiDev)' == 'true'">
+    <DefineConstants>$(DefineConstants);BCMI_DEV</DefineConstants>
+    <AssemblyTitle>Bodycam Map Installer (dev build)</AssemblyTitle>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Core\*.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Ui\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\Core\BaseTables\**\*.uasset;..\Core\BaseTables\**\*.uexp">
+      <LogicalName>BaseTables/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="app.ico">
+      <LogicalName>app.ico</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.IO.Compression" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

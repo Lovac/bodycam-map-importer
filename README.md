@@ -70,8 +70,6 @@ Steps:
 
 To update a map, run the same command with a higher version (0.1.1, 0.1.2 ...).
 
-<p align="center"><img src="docs/kit_sample_in_game.jpg" width="720" alt="Kit Sample in game: the crate uses its own material"></p>
-
 **Bought or downloaded assets work, with their own materials and shaders.** One rule from experience: in your own
 materials, every texture parameter needs a default texture of the same kind (color on a color slot, normal map on a
 normal slot, mask on a mask slot). Without one, the game cannot compile the material and draws it plain grey.
@@ -97,10 +95,6 @@ This is how the Zalissya bar from STALKER 2 got into Bodycam, as a test:
    doorways (Bodycam players are wider than STALKER's).
 7. **Build it** with `newmap.sh` like any other map, and drop the `.bcmap` on the app.
 
-First test, two props (a fence block and a gas box) in a Bodycam arena:
-
-<p align="center"><img src="docs/stalker2_props_first_test.jpg" width="720" alt="First STALKER 2 props in Bodycam"></p>
-
 The bar, first build: meshes in place, materials not yet rebuilt (the game's grey default):
 
 <p align="center"><img src="docs/stalker2_bar_untextured.jpg" width="720" alt="Zalissya bar in Bodycam before the materials"></p>
@@ -112,6 +106,16 @@ Same bar after the material rebuild:
 Inside, walkable, in a Bodycam match:
 
 <p align="center"><img src="docs/stalker2_bar_interior.jpg" width="720" alt="Inside the Zalissya bar in Bodycam"></p>
+
+Second test, Yanov Station, a bigger area (station, rail yard, trains, trees), the same steps. Every object placed
+where STALKER has it, in the kit editor. The lighting here is still the kit default and too bright; next it gets the
+sun, fog and exposure of Prison V2P:
+
+<p align="center"><img src="docs/stalker2_yanov_overview_editor.jpg" width="720" alt="Yanov Station in the kit editor, rail yard side"></p>
+
+<p align="center"><img src="docs/stalker2_yanov_overview_east_editor.jpg" width="720" alt="Yanov Station in the kit editor, from the east"></p>
+
+<p align="center"><img src="docs/stalker2_yanov_station_editor.jpg" width="720" alt="Yanov station building at ground level"></p>
 
 These STALKER 2 tests were never published and never will be.
 

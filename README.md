@@ -115,13 +115,6 @@ Inside, walkable, in a Bodycam match:
 
 These STALKER 2 tests were never published and never will be.
 
-## How long this took
-
-Work on Bodycam maps started in early **September 2026**. The app was written in mid-September, the first map
-(Prison V2P) went up on Nexus Mods on **30 September**, the map kit passed its first full test on **2 October**, and
-the STALKER 2 tests ran on **2-3 October**. About a month, over 130 work sessions. The tools were written with AI
-assistance (Claude, by Anthropic).
-
 ## What the app does not do
 
 - **No internet.** No network calls, no update check, no telemetry.

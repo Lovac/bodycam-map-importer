@@ -1,0 +1,86 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  html, body { margin: 0; background: #16171b; }
+  body { width: 1000px; font-family: "Segoe UI", Arial, sans-serif; color: #dfe1e6; }
+  .wrap { padding: 48px 56px 56px; }
+  .head { display: flex; align-items: center; gap: 28px; }
+  .head img { width: 120px; height: 120px; border-radius: 22px; }
+  h1 { font-size: 46px; margin: 0; color: #fff; letter-spacing: 0.5px; }
+  .sub { font-size: 21px; color: #e08a2c; margin-top: 6px; }
+  h2 { font-size: 28px; color: #fff; margin: 46px 0 14px; border-left: 6px solid #e08a2c; padding-left: 14px; }
+  p, li { font-size: 19px; line-height: 1.55; }
+  ol, ul { padding-left: 28px; margin: 8px 0; }
+  li { margin: 6px 0; }
+  b { color: #fff; }
+  .shot { width: 100%; border-radius: 10px; margin: 18px 0 6px; display: block; }
+  .cap { font-size: 15px; color: #8d919c; margin: 0 0 6px; }
+  .box { background: #23252c; border: 1px solid #343741; border-radius: 10px; padding: 18px 24px; margin: 16px 0; }
+  .soon { color: #e08a2c; font-weight: 600; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px; }
+  .foot { font-size: 15px; color: #8d919c; margin-top: 40px; line-height: 1.5; }
+  code { background: #2b2e36; padding: 2px 7px; border-radius: 5px; font-size: 17px; color: #f0c48a; }
+</style></head>
+<body><div class="wrap">
+
+<div class="head">
+  <img src="../logo.png" alt="">
+  <div><h1>BODYCAM MAP IMPORTER</h1>
+  <div class="sub">Add custom maps to Bodycam. Each map gets its own card in Play &gt; Custom.</div></div>
+</div>
+
+<img class="shot" src="../app_window.jpg" alt="">
+<p class="cap">The app with Prison V2P installed.</p>
+
+<h2>INSTALL A MAP (4 STEPS)</h2>
+<ol>
+  <li>Close Bodycam.</li>
+  <li>Start <b>BodycamMapInstaller.exe</b>. It finds Bodycam through Steam by itself.<br><span style="color:#8d919c;font-size:16px">Windows may say "Windows protected your PC" (new apps without a paid signature always get this): click <b>More info</b> &gt; <b>Run anyway</b>.</span></li>
+  <li>Drag the map you downloaded (<b>.bcmap</b>, <b>.zip</b> or <b>.pak</b>) onto the window.</li>
+  <li>Bodycam &gt; <b>Play &gt; Custom</b> &gt; pick a mode &gt; the map &gt; host a <b>private</b> match and add bots.</li>
+</ol>
+<div class="box">
+  <b>Remove a map:</b> select it, click DELETE.&nbsp;&nbsp;<b>Playing online:</b> click "Hide custom maps" first, "Show custom maps again" after.<br>
+  <b>Nothing is ever deleted:</b> every replaced file goes to <code>Bodycam\Content\Paks\_backup\</code>.
+</div>
+
+<img class="shot" src="../prison_v2p_in_game.jpg" alt="">
+<p class="cap">Prison V2P, a custom map installed with the app.</p>
+
+<h2>SAFE BY DESIGN</h2>
+<div class="grid">
+  <div>&#10003; No internet, no telemetry</div>
+  <div>&#10003; No admin rights needed</div>
+  <div>&#10003; Never changes the game's own files</div>
+  <div>&#10003; Does nothing while Bodycam runs</div>
+  <div>&#10003; No vanilla map replaced</div>
+  <div>&#10003; Open source (MIT) on GitHub</div>
+</div>
+
+<h2>MAKE YOUR OWN MAP</h2>
+<p>Maps are built in <b>Unreal Engine 5.5</b> with the <b>Bodycam Map Kit</b>: a ready Unreal project with the game's
+mode templates and <b>one command</b> that checks your level, builds all 7 modes (Hardpoint, Team Deathmatch,
+Deathmatch, Versus, Gun Game, Body Bomb, Wingman), bakes the bot navigation, makes the menu card from your screenshot,
+cooks and packs it. Bought or downloaded assets work too, with their own materials and shaders.</p>
+<ol>
+  <li>Install Unreal Engine <b>5.5</b>, Git for Windows and Python 3.</li>
+  <li>Build your level, add team spawns and (for Hardpoint) a hardpoint zone.</li>
+  <li>Run <code>newmap.sh MyMap "My Map" photo.png 0.1.0</code></li>
+  <li>Share the <b>.bcmap</b> it makes. Players drop it on this app.</li>
+</ol>
+<p class="soon">The Map Kit download is being cleaned for public release. Full step-by-step guide: the GitHub link under the download.</p>
+
+<img class="shot" src="../kit_sample_in_game.jpg" alt="">
+<p class="cap">Kit Sample, the kit's test map: the orange crate uses its own material, made in Unreal, running in Bodycam.</p>
+
+<h2>HOW LONG THIS TOOK</h2>
+<p>Started in early <b>September 2026</b>. The app was written mid-September, the first map (Prison V2P) went up on
+<b>30 September</b>, and the map kit passed its first full test on <b>2 October</b>.
+About a month and over 130 work sessions.</p>
+
+<div class="foot">
+  Made by Lovac (Prison V2P, Prison V3XXL, Elite Goon Squad). Tools written with AI assistance (Claude, by Anthropic).<br>
+  Fan-made: not made, supported or endorsed by Reissad Studio. Bodycam belongs to Reissad Studio. Private matches with bots only.
+</div>
+
+</div></body></html>

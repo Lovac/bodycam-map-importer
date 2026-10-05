@@ -21,6 +21,8 @@ internet, no admin rights needed.
 
 1. Close Bodycam.
 2. Start `BodycamMapInstaller.exe`. It finds Bodycam through Steam by itself.
+   Windows may show "Windows protected your PC": new apps without a paid code signature always get this.
+   Click **More info** > **Run anyway**. You can check the exe against this source first (see "Build it yourself").
 3. Drag the map you downloaded (`.bcmap`, `.zip` or `.pak`) onto the window.
 4. Start Bodycam > **Play > Custom** > pick a mode > your map > host a **private** match and add bots.
 

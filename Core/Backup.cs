@@ -64,7 +64,7 @@ namespace BodycamMapInstaller.Core
                 throw new InvalidOperationException("refusing to move a game pak " + rel);
             EnsureDir();
             string destRel = rel + (!isDir && rel.EndsWith(".pak", StringComparison.OrdinalIgnoreCase) ? ".bak" : "");
-            string dest = FreeName(Path.Combine(Dir, destRel.Replace('/', '\\')), isDir);
+            string dest = FreeName(Path.Combine(Dir, Util.OsPath(destRel)), isDir);
             Directory.CreateDirectory(Path.GetDirectoryName(dest));
             MoveRecord m = new MoveRecord();
             m.From = rel; m.Why = why; m.Kind = isDir ? "folder" : "file";

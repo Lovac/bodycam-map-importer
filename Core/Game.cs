@@ -20,8 +20,8 @@ namespace BodycamMapInstaller.Core
         {
             GameInstall g = new GameInstall();
             g.Root = Path.GetFullPath(root).TrimEnd('\\', '/');
-            g.PaksDir = Path.Combine(g.Root, @"Bodycam\Content\Paks");
-            g.ExePath = Path.Combine(g.Root, @"Bodycam\Binaries\Win64\" + GameLocator.ShippingExe + ".exe");
+            g.PaksDir = Path.Combine(g.Root, Util.OsPath(@"Bodycam\Content\Paks"));
+            g.ExePath = Path.Combine(g.Root, Util.OsPath(@"Bodycam\Binaries\Win64\" + GameLocator.ShippingExe + ".exe"));
             g.CardsDir = Path.Combine(g.PaksDir, "_cards");
             g.BackupRoot = Path.Combine(g.PaksDir, "_backup");
             g.PausedDir = Path.Combine(g.PaksDir, "_paused");

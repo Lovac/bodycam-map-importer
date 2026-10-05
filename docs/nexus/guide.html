@@ -26,22 +26,26 @@
 <div class="head">
   <img src="../logo.png" alt="">
   <div><h1>BODYCAM MAP IMPORTER</h1>
-  <div class="sub">Add custom maps to Bodycam. Each map gets its own card in Play &gt; Custom.</div></div>
+  <div class="sub">by <b style="color:#fff">MrLovac</b> &middot; add custom maps to Bodycam, each with its own card in Play &gt; Custom</div></div>
 </div>
 
-<img class="shot" src="../app_window.jpg" alt="">
-<p class="cap">The app with Prison V2P installed.</p>
+<div class="box" style="text-align:center;font-size:22px">
+  <b>OPEN THE IMPORTER:</b> <span style="color:#e08a2c">lovac.github.io/bodycam-map-importer</span><br>
+  <span style="font-size:16px;color:#8d919c">Runs in your browser. Nothing to install. The link is under the download.</span>
+</div>
+
+<img class="shot" src="../web_page.jpg" alt="">
 
 <h2>INSTALL A MAP (4 STEPS)</h2>
 <ol>
-  <li>Close Bodycam.</li>
-  <li>Start <b>BodycamMapInstaller.exe</b>. It finds Bodycam through Steam by itself.<br><span style="color:#8d919c;font-size:16px">Windows may say "Windows protected your PC" (new apps without a paid signature always get this): click <b>More info</b> &gt; <b>Run anyway</b>.</span></li>
-  <li>Drag the map you downloaded (<b>.bcmap</b>, <b>.zip</b> or <b>.pak</b>) onto the window.</li>
+  <li>Close Bodycam and open the importer page (Chrome or Edge: pick a folder for the files once, like your Desktop).</li>
+  <li>Drop the map you downloaded (<b>.bcmap</b> or <b>.zip</b>) on the page. It takes up to a minute.</li>
+  <li>Drag the files it gives you into <code>Bodycam\Content\Paks</code> (Steam &gt; right-click Bodycam &gt; Manage &gt; Browse local files). Click "Replace" if asked.</li>
   <li>Bodycam &gt; <b>Play &gt; Custom</b> &gt; pick a mode &gt; the map &gt; host a <b>private</b> match and add bots.</li>
 </ol>
 <div class="box">
-  <b>Remove a map:</b> select it, click DELETE.&nbsp;&nbsp;<b>Playing online:</b> click "Hide custom maps" first, "Show custom maps again" after.<br>
-  <b>Nothing is ever deleted:</b> every replaced file goes to <code>Bodycam\Content\Paks\_backup\</code>.
+  <b>More maps:</b> the page remembers the maps you added, so every new map keeps the others in the menu.<br>
+  <b>Remove a map:</b> click Remove; the page tells you which files to delete and gives you the new menu file.
 </div>
 
 <img class="shot" src="../prison_v2p_in_game.jpg" alt="">
@@ -49,10 +53,10 @@
 
 <h2>SAFE BY DESIGN</h2>
 <div class="grid">
-  <div>&#10003; No internet, no telemetry</div>
-  <div>&#10003; No admin rights needed</div>
+  <div>&#10003; Runs in your browser, nothing to install</div>
+  <div>&#10003; Nothing uploaded, no telemetry</div>
   <div>&#10003; Never changes the game's own files</div>
-  <div>&#10003; Does nothing while Bodycam runs</div>
+  <div>&#10003; Never touches your game folder</div>
   <div>&#10003; No vanilla map replaced</div>
   <div>&#10003; Open source (MIT) on GitHub</div>
 </div>
@@ -66,7 +70,7 @@ cooks and packs it. Bought or downloaded assets work too, with their own materia
   <li>Install Unreal Engine <b>5.5</b>, Git for Windows and Python 3.</li>
   <li>Build your level, add team spawns and (for Hardpoint) a hardpoint zone.</li>
   <li>Run <code>newmap.sh MyMap "My Map" photo.png 0.1.0</code></li>
-  <li>Share the <b>.bcmap</b> it makes. Players drop it on this app.</li>
+  <li>Share the <b>.bcmap</b> it makes. Players drop it on the importer page.</li>
 </ol>
 <p class="soon">The Map Kit download is being cleaned for public release. Full step-by-step guide: the GitHub link under the download.</p>
 
@@ -79,7 +83,7 @@ cooks and packs it. Bought or downloaded assets work too, with their own materia
 About a month and over 130 work sessions.</p>
 
 <div class="foot">
-  Made by Lovac (Prison V2P, Prison V3XXL, Elite Goon Squad). Tools written with AI assistance (Claude, by Anthropic).<br>
+  Made by MrLovac (Prison V2P, Prison V3XXL, Elite Goon Squad). Tools written with AI assistance (Claude, by Anthropic).<br>
   Fan-made: not made, supported or endorsed by Reissad Studio. Bodycam belongs to Reissad Studio. Private matches with bots only.
 </div>
 

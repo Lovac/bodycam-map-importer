@@ -1,0 +1,261 @@
+@page "/"
+@using System.IO
+@using System.Text.Json
+@using BodycamMapInstaller.Core
+@inject IJSRuntime JS
+
+<PageTitle>Bodycam Map Importer</PageTitle>
+
+<div class="page">
+  <div class="head">
+    <img src="logo.png" alt="" />
+    <div>
+      <h1>Bodycam Map Importer</h1>
+      <div class="by">by <b>MrLovac</b></div>
+      <div class="sub">Add custom maps to Bodycam. Each map gets its own card in Play &gt; Custom.</div>
+    </div>
+    @if (!string.IsNullOrEmpty(DonateUrl))
+    {
+      <a class="donate" href="@DonateUrl" target="_blank" rel="noopener">&#9829; Donate</a>
+    }
+  </div>
+
+  @if (!ready)
+  {
+    <div class="box">Loading...</div>
+  }
+  else
+  {
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div>
+        <div class="body">
+          <b>Where should the finished files go?</b>
+          @if (canPick)
+          {
+            <div class="row">
+              <button class="btn" @onclick="PickFolder">@(string.IsNullOrEmpty(outFolder) ? "Choose a folder (Desktop)" : "Change folder")</button>
+              <span class="dim">@(string.IsNullOrEmpty(outFolder) ? "Nothing chosen yet: the files will download instead." : "Files go to: " + outFolder)</span>
+            </div>
+          }
+          else
+          {
+            <div class="dim">This browser downloads the files (Chrome or Edge can save them straight into a folder).</div>
+          }
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num">2</div>
+        <div class="body">
+          <b>Drop the map here</b> (.bcmap or .zip)
+          <div class="drop @(busy ? "busy" : "")">
+            <InputFile OnChange="Dropped" accept=".bcmap,.zip,.pak" disabled="@busy" />
+            <div class="droptext">@(busy ? "Working... (up to a minute, keep this tab open)" : "Drop a map file here, or click to pick one")</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num">3</div>
+        <div class="body">
+          <b>Drag the files into Bodycam's Paks folder</b>, then start Bodycam &gt; Play &gt; Custom.
+          <div class="dim">Find it: Steam &gt; right-click Bodycam &gt; Manage &gt; Browse local files &gt; <b>Bodycam &gt; Content &gt; Paks</b>. Close Bodycam first. Click "Replace" if Windows asks.</div>
+        </div>
+      </div>
+    </div>
+
+    @if (last != null)
+    {
+      <div class="box @(last.Ok ? "ok" : "bad")">
+        @if (last.Ok)
+        {
+          @if (last.Copy.Count > 0)
+          {
+            <div class="title">@(savedTo == null ? "Downloaded" : "Saved to " + savedTo): put these @last.Copy.Count files into Paks</div>
+            <ul>@foreach (OutFile f in last.Copy) { <li><code>@f.Name</code> <span class="dim">@Size(f.Data.Length)</span></li> }</ul>
+          }
+          @if (last.Delete.Count > 0)
+          {
+            <div class="title">Delete these from Paks</div>
+            <ul>@foreach (string d in last.Delete) { <li><code>@d</code></li> }</ul>
+          }
+          @if (last.Copy.Count == 0 && last.Delete.Count == 0)
+          {
+            <div class="title">Nothing to change.</div>
+          }
+        }
+        else
+        {
+          <div class="title">Not done: nothing to copy.</div>
+        }
+        @foreach (LogLine l in last.Log.Where(x => x.Kind != "detail" && x.Kind != "dim"))
+        {
+          <div class="log @l.Kind">@l.Text</div>
+        }
+        @if (writeError != null) { <div class="log block">Could not save into the folder (@writeError); the files were downloaded instead.</div> }
+      </div>
+    }
+
+    <h2>Your maps</h2>
+    @if (maps.Count == 0)
+    {
+      <div class="dim">None yet. Maps you add here are remembered in this browser, so every new map keeps the others in the menu.</div>
+    }
+    else
+    {
+      <table class="maps">
+        @foreach (InstalledMap m in maps)
+        {
+          <tr>
+            <td><b>@m.Label</b> <span class="dim">@m.Version</span></td>
+            <td class="dim">@ModeText(m.Modes)</td>
+            <td><button class="btn small red" disabled="@busy" @onclick="() => RemoveMap(m)">Remove</button></td>
+          </tr>
+        }
+      </table>
+      <div class="row"><button class="btn small" disabled="@busy" @onclick="MenuAgain">Give me the menu file again</button></div>
+    }
+
+    <div class="foot">
+      Runs entirely in your browser: nothing is uploaded and nothing touches your game folder; you copy the files yourself.
+      Every map you remove here tells you which files to delete. Private matches with bots only; everyone in a match needs
+      the same maps. Fan-made, not made, supported or endorsed by Reissad Studio.
+      Source and guide: <a href="https://github.com/Lovac/bodycam-map-importer" target="_blank">github.com/Lovac/bodycam-map-importer</a>
+    </div>
+  }
+</div>
+
+@code {
+    // MrLovac's donation page (empty = no button)
+    const string DonateUrl = "";
+    WebSession session;
+    bool ready, busy, canPick;
+    string outFolder, savedTo, writeError;
+    StepResult last;
+    List<InstalledMap> maps = new List<InstalledMap>();
+
+    protected override async Task OnAfterRenderAsync(bool first)
+    {
+        if (!first) return;
+        session = new WebSession();
+        string json = await JS.InvokeAsync<string>("bcmi.loadState");
+        if (!string.IsNullOrEmpty(json))
+        {
+            Dictionary<string, byte[]> files = JsonSerializer.Deserialize<Dictionary<string, byte[]>>(json);
+            if (files != null) session.Restore(files);
+        }
+        canPick = await JS.InvokeAsync<bool>("bcmi.canPickFolder");
+        if (canPick) outFolder = await JS.InvokeAsync<string>("bcmi.folderName");
+        Refresh();
+        ready = true;
+        StateHasChanged();
+    }
+
+    void Refresh()
+    {
+        maps = session.List().Where(m => m.Kind == MapKind.Card).OrderBy(m => m.Label).ToList();
+    }
+
+    bool Ask(string title, string body, string yes, string no)
+    {
+        return ((IJSInProcessRuntime)JS).Invoke<bool>("bcmi.ask", title + "\n\n" + body + "\n\nOK = " + yes + "    Cancel = " + no);
+    }
+
+    async Task PickFolder()
+    {
+        string name = await JS.InvokeAsync<string>("bcmi.pickFolder");
+        if (!string.IsNullOrEmpty(name)) outFolder = name;
+    }
+
+    async Task Dropped(InputFileChangeEventArgs e)
+    {
+        if (busy) return;
+        busy = true; last = null; writeError = null; savedTo = null;
+        StateHasChanged();
+        await Task.Yield();
+        try
+        {
+            IBrowserFile f = e.File;
+            byte[] data;
+            using (MemoryStream ms = new MemoryStream())
+            {
+                await f.OpenReadStream(4L * 1024 * 1024 * 1024).CopyToAsync(ms);
+                data = ms.ToArray();
+            }
+            last = session.Install(f.Name, data, Ask);
+            await Finish();
+        }
+        catch (Exception ex)
+        {
+            last = new StepResult { Ok = false, Message = ex.Message };
+            last.Log.Add(new LogLine { Kind = "block", Text = "Something went wrong: " + ex.Message });
+        }
+        busy = false;
+        StateHasChanged();
+    }
+
+    async Task RemoveMap(InstalledMap m)
+    {
+        if (busy) return;
+        busy = true; last = null; writeError = null; savedTo = null;
+        StateHasChanged();
+        await Task.Yield();
+        last = session.Remove(m.Id, Ask);
+        await Finish();
+        busy = false;
+        StateHasChanged();
+    }
+
+    async Task MenuAgain()
+    {
+        busy = true; last = null; writeError = null; savedTo = null;
+        last = session.MenuOnly();
+        await Finish();
+        busy = false;
+        StateHasChanged();
+    }
+
+    async Task Finish()
+    {
+        if (last == null || !last.Ok) { Refresh(); return; }
+        if (last.Copy.Count > 0)
+        {
+            bool done = false;
+            if (canPick && !string.IsNullOrEmpty(outFolder))
+            {
+                writeError = null;
+                foreach (OutFile o in last.Copy)
+                {
+                    string err = await JS.InvokeAsync<string>("bcmi.writeOne", o.Name, o.Data);
+                    if (!string.IsNullOrEmpty(err)) { writeError = err; break; }
+                }
+                done = writeError == null;
+                if (done) savedTo = outFolder;
+            }
+            if (!done)
+                foreach (OutFile o in last.Copy) await JS.InvokeVoidAsync("bcmi.download", o.Name, o.Data);
+        }
+        session.ShrinkMapPaks();
+        await JS.InvokeAsync<bool>("bcmi.saveState", JsonSerializer.Serialize(session.Snapshot()));
+        Refresh();
+    }
+
+    static readonly Dictionary<string, string> ModeNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        { "HP", "Hardpoint" }, { "TDM", "Team Deathmatch" }, { "DM", "Deathmatch" }, { "VS", "Versus" },
+        { "GG", "Gun Game" }, { "BB", "Body Bomb" }, { "WM", "Wingman" }
+    };
+
+    static string ModeText(string[] modes)
+    {
+        if (modes == null) return "";
+        return string.Join(", ", modes.Select(x => ModeNames.TryGetValue(x, out string n) ? n : x));
+    }
+
+    static string Size(long n)
+    {
+        if (n >= 1024 * 1024) return (n / 1048576.0).ToString("0.0") + " MB";
+        return (n / 1024.0).ToString("0") + " KB";
+    }
+}

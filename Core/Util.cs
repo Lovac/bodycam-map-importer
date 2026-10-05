@@ -132,9 +132,25 @@ namespace BodycamMapInstaller.Core
             using (SHA256 s = SHA256.Create()) return Hex(s.ComputeHash(fs));
         }
 
+        /// <summary>A relative path written with either slash, as this system writes paths (Windows: backslashes;
+        /// the web version runs on the browser's file system, which only knows '/').</summary>
+        public static string OsPath(string rel)
+        {
+#if BCMI_WEB
+            return rel.Replace('\\', '/');
+#else
+            return rel.Replace('/', '\\');
+#endif
+        }
+
         public static string Md5Hex(byte[] data)
         {
+#if BCMI_WEB
+            // browsers' .NET has no MD5 (Web/Md5.cs is a plain managed copy)
+            return Hex(BodycamMapImporterWeb.Md5.Hash(data));
+#else
             using (MD5 m = MD5.Create()) return Hex(m.ComputeHash(data));
+#endif
         }
 
         public static string Hex(byte[] b)

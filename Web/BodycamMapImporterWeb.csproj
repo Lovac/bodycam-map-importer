@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>BodycamMapImporterWeb</AssemblyName>
+    <RootNamespace>BodycamMapImporterWeb</RootNamespace>
+    <DefineConstants>$(DefineConstants);BCMI_WEB</DefineConstants>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <BlazorWebAssemblyLoadAllGlobalizationData>false</BlazorWebAssemblyLoadAllGlobalizationData>
+  </PropertyGroup>
+
+  <!-- the desktop app's core, shared file for file; the pieces that need Windows itself stay out -->
+  <ItemGroup>
+    <Compile Include="..\Core\*.cs" Exclude="..\Core\DevRunner.cs;..\Core\MakerChecks.cs" />
+  </ItemGroup>
+
+  <!-- the game's own menu tables (not in git: see README "Build it yourself") -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\Core\BaseTables\**\*.uasset;..\Core\BaseTables\**\*.uexp">
+      <LogicalName>BaseTables/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.28" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.28" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- local self-test maps (Pages/SelfTest.razor): never published -->
+  <ItemGroup>
+    <Content Update="wwwroot\testdata\**" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
+</Project>

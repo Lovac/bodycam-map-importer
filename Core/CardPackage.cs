@@ -263,19 +263,19 @@ namespace BodycamMapInstaller.Core
 
         public bool Has(string entry)
         {
-            if (folder != null) return PackagePaths.IsSafeEntryName(entry) && File.Exists(Path.Combine(folder, entry.Replace('/', '\\')));
+            if (folder != null) return PackagePaths.IsSafeEntryName(entry) && File.Exists(Path.Combine(folder, Util.OsPath(entry)));
             return zip != null && zip.Has(prefix + entry);
         }
 
         public byte[] Read(string entry)
         {
-            if (folder != null) return File.ReadAllBytes(Path.Combine(folder, entry.Replace('/', '\\')));
+            if (folder != null) return File.ReadAllBytes(Path.Combine(folder, Util.OsPath(entry)));
             return zip.Read(prefix + entry);
         }
 
         public long EntryLength(string entry)
         {
-            if (folder != null) return new FileInfo(Path.Combine(folder, entry.Replace('/', '\\'))).Length;
+            if (folder != null) return new FileInfo(Path.Combine(folder, Util.OsPath(entry))).Length;
             return zip.Length(prefix + entry);
         }
 
@@ -283,7 +283,7 @@ namespace BodycamMapInstaller.Core
         {
             if (folder != null)
             {
-                using (FileStream fs = new FileStream(Path.Combine(folder, entry.Replace('/', '\\')), FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 16))
+                using (FileStream fs = new FileStream(Path.Combine(folder, Util.OsPath(entry)), FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 16))
                     fs.CopyTo(dest, 1 << 20);
                 return;
             }
@@ -294,7 +294,7 @@ namespace BodycamMapInstaller.Core
         {
             if (folder != null)
             {
-                string f = Path.Combine(folder, entry.Replace('/', '\\'));
+                string f = Path.Combine(folder, Util.OsPath(entry));
                 return delegate { return new FileStream(f, FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 16); };
             }
             return zip.SeekableOpener(prefix + entry);

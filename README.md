@@ -7,28 +7,30 @@ A free Windows app that adds **custom maps to Bodycam**. Drop a map on the windo
 
 The window still says "Bodycam Map Installer". It is the same app.
 
-Made by **Lovac** (Prison V2P and Prison V3XXL on Nexus Mods). Fan-made: not made, supported or endorsed by
+Made by **MrLovac** (Prison V2P, Prison V3XXL and Elite Goon Squad on Nexus Mods). Fan-made: not made, supported or endorsed by
 Reissad Studio. Bodycam and its files belong to Reissad Studio. Use mods at your own risk.
 
 <p align="center"><img src="docs/app_window.jpg" width="720" alt="The app window with Prison V2P installed"></p>
 
-## Download
+## Use it (no download)
 
-Get **BodycamMapInstaller.exe** from the [Releases page](../../releases/latest). It is one file: no setup, no
-internet, no admin rights needed.
-
-## Install a map (players)
+Open **https://lovac.github.io/bodycam-map-importer/** in Chrome, Edge or Firefox. It runs in your browser: nothing to
+install, nothing uploaded, and it never touches your game folder.
 
 1. Close Bodycam.
-2. Start `BodycamMapInstaller.exe`. It finds Bodycam through Steam by itself.
-   Windows may show "Windows protected your PC": new apps without a paid code signature always get this.
-   Click **More info** > **Run anyway**. You can check the exe against this source first (see "Build it yourself").
-3. Drag the map you downloaded (`.bcmap`, `.zip` or `.pak`) onto the window.
-4. Start Bodycam > **Play > Custom** > pick a mode > your map > host a **private** match and add bots.
+2. Open the page. In Chrome or Edge, pick a folder for the finished files once (your Desktop is fine); other browsers
+   simply download them.
+3. Drop the map you downloaded (`.bcmap` or `.zip`) on the page. It takes up to a minute.
+4. Drag the files it gives you into **Bodycam\Content\Paks** (Steam > right-click Bodycam > Manage > Browse local
+   files > Bodycam > Content > Paks). Click "Replace" if Windows asks.
+5. Start Bodycam > **Play > Custom** > pick a mode > your map > host a **private** match and add bots.
 
-To remove a map: select it in the list and click **DELETE**. Before playing online, click
-**Hide custom maps (for online play)**; **Show custom maps again** brings them back.
-Every file the app replaces or removes is moved to `Bodycam\Content\Paks\_backup\`, never deleted.
+The page remembers the maps you added in this browser, so each new map keeps the others in the menu. To remove a map,
+click Remove: the page tells you which files to delete from Paks and gives you the new menu file.
+
+Prefer a program? `BodycamMapInstaller.exe` on the [Releases page](../../releases/latest) does the same thing and
+writes into the game folder itself. Windows may show "Windows protected your PC" for it (new apps without a paid code
+signature always get this): **More info** > **Run anyway**.
 
 <p align="center"><img src="docs/prison_v2p_in_game.jpg" width="720" alt="Prison V2P, a custom map installed with the app"></p>
 
@@ -156,7 +158,8 @@ to rebuild the shared menu file. They are **not** in this repository; their name
 
 3. `dotnet build App\BodycamMapInstaller.csproj -c Release`
 
-The build is reproducible: with SDK 8.0.422 you get the same exe, byte for byte. Version 0.1.0 (5 October 2026):
+The build is reproducible: with SDK 8.0.422 you get the same exe, byte for byte. Version 0.1.0 (5 October 2026), built
+from the `v0.1.0` tag (later commits add the web version in `Web/`, built with `dotnet publish Web -c Release`):
 
 | File | SHA-256 |
 |---|---|

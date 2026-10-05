@@ -1,0 +1,87 @@
+@page "/selftest"
+@using System.IO
+@using System.Net.Http
+@using System.Security.Cryptography
+@using BodycamMapInstaller.Core
+@inject HttpClient Http
+
+<PageTitle>Importer self-test</PageTitle>
+
+<div class="page">
+  <h1>Web importer self-test</h1>
+  <div class="dim">Local check only: needs testdata/ beside the page (never published). No downloads, nothing saved.</div>
+  @foreach (string l in lines) { <div class="log @(l.StartsWith("FAIL") ? "block" : l.StartsWith("PASS") ? "good" : "")">@l</div> }
+  <div id="done">@(finished ? "RESULT " + (fails == 0 ? "PASS" : "FAIL " + fails) : "running...")</div>
+</div>
+
+@code {
+    readonly List<string> lines = new List<string>();
+    int fails;
+    bool finished;
+
+    void Say(string s) { lines.Add(s); StateHasChanged(); }
+    void Check(bool ok, string what) { if (!ok) fails++; Say((ok ? "PASS " : "FAIL ") + what); }
+
+    static string Sha(byte[] b) { using (SHA1 s = SHA1.Create()) return Convert.ToHexString(s.ComputeHash(b)).ToLowerInvariant(); }
+
+    protected override async Task OnAfterRenderAsync(bool first)
+    {
+        if (!first) return;
+        await Task.Delay(50);
+        try { await Run(); }
+        catch (Exception ex) { fails++; Say("FAIL exception: " + ex); }
+        finished = true;
+        StateHasChanged();
+    }
+
+    async Task Run()
+    {
+        Check(BodycamMapImporterWeb.Md5.SelfCheck(), "MD5 matches the RFC 1321 test vectors");
+        if (Directory.Exists("/bcmi")) Directory.Delete("/bcmi", true);
+        byte[] kit = await Http.GetByteArrayAsync("testdata/KitSample.bcmap");
+        byte[] gate = await Http.GetByteArrayAsync("testdata/GateCheck.bcmap");
+
+        WebSession s1 = new WebSession();
+        StepResult a = s1.Install("KitSample.bcmap", kit, delegate { return false; });
+        Check(a.Ok, "install Kit Sample: " + a.Message);
+        Check(a.Copy.Select(f => f.Name).SequenceEqual(new[] { "zKitSample_9_P.pak", "zKitSample_Modes_9_P.pak", "zzMapCards_19_P.pak" }),
+              "Kit Sample gives exactly its 2 paks + the menu: " + string.Join(", ", a.Copy.Select(f => f.Name)));
+        foreach (OutFile f in a.Copy) Say("   " + f.Name + "  " + f.Data.Length + "  sha1 " + Sha(f.Data));
+        s1.ShrinkMapPaks();
+        Dictionary<string, byte[]> saved = s1.Snapshot();
+        long keep = saved.Values.Sum(v => (long)v.Length);
+        Say("   remembered: " + saved.Count + " files, " + keep + " bytes");
+
+        // a new visit: everything in memory gone, only what the browser kept
+        Directory.Delete("/bcmi", true);
+        WebSession s2 = new WebSession();
+        s2.Restore(saved);
+        IList<InstalledMap> l2 = s2.List();
+        InstalledMap k2 = l2.FirstOrDefault(m => m.Id == "KitSample");
+        Check(k2 != null && k2.Problems.Count == 0, "after a reload Kit Sample is still installed with no problems" + (k2 != null && k2.Problems.Count > 0 ? ": " + string.Join("; ", k2.Problems) : ""));
+
+        StepResult b = s2.Install("GateCheck.bcmap", gate, delegate { return false; });
+        Check(b.Ok, "install Gate Check: " + b.Message);
+        foreach (OutFile f in b.Copy) Say("   " + f.Name + "  " + f.Data.Length + "  sha1 " + Sha(f.Data));
+        Check(!b.Log.Any(x => x.Text.Contains("missing files")), "no 'missing files' for Kit Sample");
+        OutFile menu = b.Copy.FirstOrDefault(f => f.Name == MenuPakBuilder.PakName);
+        Check(menu != null, "the menu file comes with Gate Check");
+        if (menu != null)
+        {
+            File.WriteAllBytes("/bcmi/menu_check.pak", menu.Data);
+            List<string> paths = PakReader.Open("/bcmi/menu_check.pak", false).ContentPaths();
+            bool hasKit = paths.Any(p => p.Contains("KitSample")), hasGate = paths.Any(p => p.Contains("GateCheck"));
+            Check(hasKit && hasGate, "the new menu holds BOTH cards (Kit Sample " + hasKit + ", Gate Check " + hasGate + ")");
+            Say("MENU2 sha1 " + Sha(menu.Data) + " size " + menu.Data.Length);
+        }
+        s2.ShrinkMapPaks();
+
+        StepResult c = s2.Remove("GateCheck", delegate { return true; });
+        Check(c.Ok, "remove Gate Check: " + c.Message);
+        Check(c.Delete.Contains("zGateCheck_9_P.pak") && c.Delete.Contains("zGateCheck_Modes_9_P.pak"),
+              "remove says to delete Gate Check's 2 paks: " + string.Join(", ", c.Delete));
+        Check(c.Copy.Any(f => f.Name == MenuPakBuilder.PakName), "remove gives a new menu file");
+        IList<InstalledMap> l3 = s2.List();
+        Check(l3.Any(m => m.Id == "KitSample") && !l3.Any(m => m.Id == "GateCheck"), "after remove only Kit Sample is listed");
+    }
+}

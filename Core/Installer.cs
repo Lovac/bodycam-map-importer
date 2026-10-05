@@ -244,7 +244,7 @@ namespace BodycamMapInstaller.Core
                     }
                     m.PakFiles = paks.ToArray();
                     foreach (string e in ExpectedCardMenuFiles(c))
-                        if (!File.Exists(Path.Combine(dir, "menu", e.Replace('/', '\\')))) missing.Add("menu/" + e);
+                        if (!File.Exists(Path.Combine(dir, "menu", Util.OsPath(e)))) missing.Add("menu/" + e);
                     if (missing.Count > 0) m.Problems.Add("missing files: " + string.Join(", ", missing.ToArray()));
                     foreach (string pak in paks)
                     {
@@ -484,6 +484,8 @@ namespace BodycamMapInstaller.Core
             {
                 if (n.IndexOf("also offers Hardpoint", StringComparison.Ordinal) >= 0) log.Detail(n); else log.Warn(n);
             }
+#if !BCMI_WEB
+            // (the web version works in the browser's memory: no disk to measure)
             try
             {
                 DriveInfo drive = new DriveInfo(Path.GetPathRoot(game.PaksDir));
@@ -495,6 +497,7 @@ namespace BodycamMapInstaller.Core
                 }
             }
             catch (ArgumentException) { }
+#endif
 
             log.Info("Installing " + name + " " + c.Version + " (" + c.ModesText + ")...");
             Backup backup = Backup.Begin(game);
@@ -576,7 +579,7 @@ namespace BodycamMapInstaller.Core
                 Util.WriteNew(Path.Combine(staging, "card.json"), pkg.CardJsonBytes);
                 Util.WriteNew(Path.Combine(staging, "thumb.png"), pkg.Read("thumb.png"));
                 foreach (string e in pkg.ExpectedMenuEntries(true))
-                    if (pkg.Has(e)) Util.WriteNew(Path.Combine(staging, e.Replace('/', '\\')), pkg.Read(e));
+                    if (pkg.Has(e)) Util.WriteNew(Path.Combine(staging, Util.OsPath(e)), pkg.Read(e));
                 DateTime installedAt = DateTime.UtcNow;
                 if (existing != null && existing.InstalledAtUtc != DateTime.MinValue) installedAt = existing.InstalledAtUtc;
                 JsonOut paksSha = new JsonOut();
@@ -962,7 +965,7 @@ namespace BodycamMapInstaller.Core
                 foreach (string f in files)
                 {
                     string rel = Util.Relative(game.PaksDir, f);
-                    string dest = Path.Combine(game.PausedDir, rel.Replace('/', '\\') + ".off");
+                    string dest = Path.Combine(game.PausedDir, Util.OsPath(rel) + ".off");
                     Directory.CreateDirectory(Path.GetDirectoryName(dest));
                     if (File.Exists(dest)) backup.Move(dest, "older paused copy");
                     Util.MoveFile(f, dest);
@@ -992,7 +995,7 @@ namespace BodycamMapInstaller.Core
                 {
                     string rel = Util.Relative(game.PausedDir, off);
                     rel = rel.Substring(0, rel.Length - 4);
-                    string dest = Path.Combine(game.PaksDir, rel.Replace('/', '\\'));
+                    string dest = Path.Combine(game.PaksDir, Util.OsPath(rel));
                     if (Util.IsGamePakName(Path.GetFileName(dest))) { backup.Move(off, "game file name"); continue; }
                     if (File.Exists(dest))
                     {

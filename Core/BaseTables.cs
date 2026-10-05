@@ -68,7 +68,7 @@ namespace BodycamMapInstaller.Core
         public static BaseTables FromDirectory(string contentDir)
         {
             BaseTables t = new BaseTables();
-            foreach (string rel in RelPaths) t.files[rel] = File.ReadAllBytes(Path.Combine(contentDir, rel.Replace('/', '\\')));
+            foreach (string rel in RelPaths) t.files[rel] = File.ReadAllBytes(Path.Combine(contentDir, Util.OsPath(rel)));
             return t;
         }
 

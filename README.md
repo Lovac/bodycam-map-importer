@@ -115,7 +115,6 @@ from the installed game), and the evening sun, fog and exposure of Prison V2P. I
 
 <p align="center"><img src="docs/stalker2_yanov_overview_east_editor.jpg" width="720" alt="Yanov Station in the kit editor, from the east"></p>
 
-<p align="center"><img src="docs/stalker2_yanov_street_editor.jpg" width="720" alt="Yanov Station at ground level"></p>
 
 These STALKER 2 tests were never published and never will be.
 

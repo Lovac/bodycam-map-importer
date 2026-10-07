@@ -107,15 +107,6 @@ Inside, walkable, in a Bodycam match:
 
 <p align="center"><img src="docs/stalker2_bar_interior.jpg" width="720" alt="Inside the Zalissya bar in Bodycam"></p>
 
-Second test, Yanov Station, a bigger area (station, rail yard, trains, trees), the same steps. Every object placed
-where STALKER has it, every material rebuilt with its own textures (the ones the mod kit could not export came
-from the installed game), and the evening sun, fog and exposure of Prison V2P. In the kit editor:
-
-<p align="center"><img src="docs/stalker2_yanov_overview_editor.jpg" width="720" alt="Yanov Station in the kit editor, rail yard side"></p>
-
-<p align="center"><img src="docs/stalker2_yanov_overview_east_editor.jpg" width="720" alt="Yanov Station in the kit editor, from the east"></p>
-
-
 These STALKER 2 tests were never published and never will be.
 
 ## What the app does not do

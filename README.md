@@ -42,7 +42,8 @@ Maps are built in **Unreal Engine 5.5** with the **Bodycam Map Kit**: a ready Un
 templates, plus one command that checks your level, builds all 7 modes, bakes the bot navigation, makes the menu card
 from your screenshot, cooks, packs and installs it.
 
-> The Map Kit download is being cleaned for public release and will be linked here in the next days.
+**Download the Map Kit:** https://github.com/Lovac/bodycam-map-kit (green **Code** button > **Download ZIP**). It
+includes a small test map and the Prison V2P level as a full example.
 
 What you need:
 

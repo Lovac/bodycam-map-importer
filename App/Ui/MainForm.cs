@@ -42,9 +42,9 @@ namespace BodycamMapInstaller.Ui
     partial class MainForm : Form
     {
 #if BCMI_DEV
-        public const string AppVersion = "v0.1 preview (dev build)";
+        public const string AppVersion = "v0.2 (dev build)";
 #else
-        public const string AppVersion = "v0.1 preview";
+        public const string AppVersion = "v0.2";
 #endif
         public const string HideLink = "Hide custom maps (for online play)";
         public const string ShowLink = "Show custom maps again";
@@ -61,6 +61,10 @@ namespace BodycamMapInstaller.Ui
         readonly bool auto;
         static BaseTables baseTables;
 
+        Rectangle cardGame, cardMaps, cardLog;
+        readonly LogoView logo = new LogoView();
+        readonly Label byLine = new Label();
+        readonly System.Windows.Forms.Timer appear = new System.Windows.Forms.Timer();
         readonly Label title = new Label();
         readonly Label version = new Label();
         readonly Label gameCaption = new Label();
@@ -106,36 +110,46 @@ namespace BodycamMapInstaller.Ui
             log = new WindowLog(fileLog);
             fileLog.Write("START", "Bodycam Map Installer v" + Util.InstallerVersion + " (" + AppVersion + ") started" + (IsElevated() ? " as administrator" : ""));
 
-            Text = "Bodycam Map Installer";
+            Text = "Bodycam Map Importer";
+            logo.Still = auto;
+            if (auto) { /* screenshots: the finished logo */ }
             if (Theme.AppIcon != null) Icon = Theme.AppIcon;
             BackColor = Theme.Window;
             ForeColor = Theme.Text;
             Font = Theme.Body;
             AutoScaleMode = AutoScaleMode.None;
             ClientSize = new Size(Theme.Px(960), Theme.Px(660));
+            ResizeRedraw = true;
             MinimumSize = new Size(Theme.Px(840), Theme.Px(600));
             StartPosition = FormStartPosition.CenterScreen;
             DoubleBuffered = true;
             KeyPreview = true;
             if (!ApplySavedBounds()) FitToScreen();
 
-            Setup(title, "Bodycam Map Installer", Theme.Title, Theme.Text);
+            Setup(title, "Bodycam Map Importer", Theme.Title, Theme.Text);
+            Setup(byLine, "by MrLovac", Theme.Small, Theme.Accent);
             Setup(version, AppVersion, Theme.Small, Theme.TextDim);
-            Setup(gameCaption, "Game", Theme.Small, Theme.TextDim);
+            Setup(gameCaption, "GAME", Theme.Tab, Theme.HueGame);
+            gameCaption.BackColor = Theme.Window;
             Setup(gamePath, "Looking for Bodycam...", Theme.Body, Theme.Text);
             gamePath.AutoSize = false;
             gamePath.AutoEllipsis = true;
             Setup(gameState, "", Theme.Small, Theme.TextDim);
             gameState.AutoSize = false;
             gameState.AutoEllipsis = true;
-            Setup(listCaption, "Installed maps", Theme.H2, Theme.Text);
-            Setup(logCaption, "Activity", Theme.H2, Theme.Text);
+            Setup(listCaption, "INSTALLED MAPS", Theme.Tab, Theme.HueMaps);
+            listCaption.BackColor = Theme.Window;
+            Setup(logCaption, "ACTIVITY", Theme.Tab, Theme.HueLog);
+            logCaption.BackColor = Theme.Window;
+            browse.Back = remove.Back = openPaks.Back = openBackups.Back = Theme.Panel;
+            pauseLink.LinkColor = Theme.Accent;
+            pauseLink.VisitedLinkColor = Theme.Accent;
             pauseLink.Font = Theme.Small;
             pauseLink.AutoSize = true;
             pauseLink.BackColor = Color.Transparent;
-            pauseLink.LinkColor = Theme.Blue;
+            pauseLink.LinkColor = Theme.Accent;
             pauseLink.ActiveLinkColor = Theme.Text;
-            pauseLink.VisitedLinkColor = Theme.Blue;
+            pauseLink.VisitedLinkColor = Theme.Accent;
             pauseLink.DisabledLinkColor = Theme.TextDim;
             pauseLink.LinkBehavior = LinkBehavior.HoverUnderline;
             pauseLink.UseMnemonic = false;
@@ -164,7 +178,7 @@ namespace BodycamMapInstaller.Ui
             openBackups.Click += delegate { OpenFolder(game == null ? null : game.BackupRoot, "The Backups folder"); };
             pauseLink.LinkClicked += delegate { OnPauseLink(); };
 
-            Controls.AddRange(new Control[] { title, version, gameCaption, gamePath, gameState, pauseLink, browse, drop, listCaption, list, details, remove, openPaks, openBackups, logCaption, activity });
+            Controls.AddRange(new Control[] { logo, byLine, title, version, gameCaption, gamePath, gameState, pauseLink, browse, drop, listCaption, list, details, remove, openPaks, openBackups, logCaption, activity });
             HookDrop(this);
             foreach (Control c in Controls) HookDrop(c);
 
@@ -208,11 +222,38 @@ namespace BodycamMapInstaller.Ui
             Theme.DarkTitleBar(Handle);
         }
 
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            if (auto || !SystemInformation.UIEffectsEnabled) return;
+            Opacity = 0;
+            DateTime t0 = DateTime.UtcNow;
+            appear.Interval = 16;
+            appear.Tick += delegate
+            {
+                double t = Math.Min(1, (DateTime.UtcNow - t0).TotalSeconds / 0.7), eased = 1 - (1 - t) * (1 - t) * (1 - t);
+                Opacity = eased;
+                if (t >= 1) { appear.Stop(); Opacity = 1; }
+            };
+            appear.Start();
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            Graphics g = e.Graphics;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            if (cardGame.Width > 0) Theme.Card(g, cardGame, Theme.HueGame);
+            if (cardMaps.Width > 0) Theme.Card(g, cardMaps, Theme.HueMaps);
+            if (cardLog.Width > 0) Theme.Card(g, cardLog, Theme.HueLog);
+        }
+
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
             uiTimer.Start();
             gameTimer.Start();
+            logo.StartAnimating();
             if (IsElevated()) log.Dim("Running as administrator: Windows blocks drag and drop from Explorer into this window. Click the box to pick a file instead.");
             StartScan(true, true);
         }
@@ -286,28 +327,33 @@ namespace BodycamMapInstaller.Ui
         {
             base.OnLayout(e);
             if (activity == null || drop == null) return;
-            int m = Theme.Px(24), gap = Theme.Px(16), rightW = Theme.Px(380), logH = Theme.Px(100);
+            int m = Theme.Px(24), gap = Theme.Px(14), rightW = Theme.Px(380), logH = Theme.Px(92), pad = Theme.Px(10);
             int w = ClientSize.Width, h = ClientSize.Height;
             int btnH = Theme.Body.Height + Theme.Px(14);
-            title.Location = new Point(m - Theme.Px(2), Theme.Px(14));
+            int logoS = Theme.Px(58);
+            logo.SetBounds(m - Theme.Px(10), Theme.Px(6), logoS, logoS);
+            title.Location = new Point(logo.Right + Theme.Px(6), Theme.Px(10));
+            byLine.Location = new Point(logo.Right + Theme.Px(8), title.Bottom - Theme.Px(1));
             version.Location = new Point(w - m - version.PreferredWidth, Theme.Px(22));
 
-            int y = title.Bottom + Theme.Px(12);
-            int capW = gameCaption.PreferredWidth + Theme.Px(12);
+            // the game card
+            int y = logo.Bottom + Theme.Px(12);
             int bw = browse.Preferred;
-            browse.SetBounds(w - m - bw, y, bw, btnH);
-            gameCaption.Location = new Point(m, y + (Theme.Body.Height - Theme.Small.Height) / 2 + Theme.Px(1));
-            int textW = browse.Left - gap - m - capW;
-            gamePath.SetBounds(m + capW, y, textW, Theme.Body.Height + Theme.Px(2));
-            gameState.SetBounds(m + capW, gamePath.Bottom + Theme.Px(1), textW, Theme.Small.Height + Theme.Px(2));
-            pauseLink.Location = new Point(m + capW, gameState.Bottom + Theme.Px(2));
-            int linkBottom = pauseLink.Top + Theme.Small.Height + Theme.Px(2);
+            browse.SetBounds(w - m - bw, y + Theme.Px(3), bw, btnH);
+            int textW = browse.Left - gap - m;
+            gamePath.SetBounds(m, y + Theme.Px(2), textW, Theme.Body.Height + Theme.Px(2));
+            gameState.SetBounds(m, gamePath.Bottom + Theme.Px(1), textW, Theme.Small.Height + Theme.Px(2));
+            pauseLink.Location = new Point(m + Math.Min(textW / 2, TextRenderer.MeasureText(gameState.Text, gameState.Font).Width + Theme.Px(14)), gameState.Top);
+            int gameBottom = Math.Max(browse.Bottom, gameState.Bottom);
+            cardGame = new Rectangle(m - pad, y - Theme.Px(10), w - 2 * m + 2 * pad, gameBottom - y + Theme.Px(20));
+            gameCaption.Location = new Point(cardGame.X + Theme.Px(10), cardGame.Y - gameCaption.PreferredHeight / 2);
 
-            int top = Math.Max(browse.Bottom, linkBottom) + Theme.Px(14) + listCaption.PreferredHeight;
-            int bodyH = h - top - m - logH - logCaption.PreferredHeight - Theme.Px(8) - gap;
+            int top = cardGame.Bottom + gap + pad;
+            int bodyH = h - top - pad - gap - pad - logH - pad - Theme.Px(10);
             int rx = w - m - rightW;
-            drop.SetBounds(m, top - listCaption.PreferredHeight - Theme.Px(6), rx - gap - m, bodyH + listCaption.PreferredHeight + Theme.Px(6));
-            listCaption.Location = new Point(rx - Theme.Px(2), top - listCaption.PreferredHeight - Theme.Px(6));
+            drop.SetBounds(m - pad, top - pad, rx - pad - gap - (m - pad), bodyH + 2 * pad);
+            cardMaps = new Rectangle(rx - pad, top - pad, rightW + 2 * pad, bodyH + 2 * pad);
+            listCaption.Location = new Point(cardMaps.X + Theme.Px(10), cardMaps.Y - listCaption.PreferredHeight / 2);
 
             int thumbH = Theme.Px(64);
             int detailsH = Math.Max(thumbH, Theme.BodySemi.Height + Theme.Small.Height * 2 + Theme.Px(8));
@@ -332,9 +378,10 @@ namespace BodycamMapInstaller.Ui
             setup.SetBounds(cook.Right + Theme.Px(8), my, rightW - 2 * each - Theme.Px(16), btnH);
 #endif
 
-            int ly = top + bodyH + gap;
-            logCaption.Location = new Point(m - Theme.Px(2), ly);
-            activity.SetBounds(m, logCaption.Bottom + Theme.Px(8), w - m * 2, h - (logCaption.Bottom + Theme.Px(8)) - m);
+            cardLog = new Rectangle(m - pad, cardMaps.Bottom + gap, w - 2 * m + 2 * pad, h - (cardMaps.Bottom + gap) - Theme.Px(10));
+            logCaption.Location = new Point(cardLog.X + Theme.Px(10), cardLog.Y - logCaption.PreferredHeight / 2);
+            activity.SetBounds(m, cardLog.Y + pad, w - 2 * m, cardLog.Height - 2 * pad);
+            Invalidate();
         }
 
         string SourcePart(GameInstall g)
@@ -801,6 +848,7 @@ namespace BodycamMapInstaller.Ui
         void RunOperation(string status, Work work, string[] filesForAdmin, MethodInvoker after)
         {
             busy = true;
+            logo.Working = true;
             busyStatus = status;
             busyStart = DateTime.Now;
             resultShown = false;
@@ -841,6 +889,7 @@ namespace BodycamMapInstaller.Ui
             MethodInvoker finish = delegate
             {
                 busy = false;
+                logo.Working = false;
                 devRunning = false;
                 busyStatus = null;
                 log.TakeProgress();

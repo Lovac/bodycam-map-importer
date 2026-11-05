@@ -11,18 +11,26 @@ namespace BodycamMapInstaller.Ui
 {
     static class Theme
     {
-        public static readonly Color Window = ColorTranslator.FromHtml("#16171B");
-        public static readonly Color Panel = ColorTranslator.FromHtml("#1F2026");
-        public static readonly Color PanelRaised = ColorTranslator.FromHtml("#26282F");
-        public static readonly Color Selected = ColorTranslator.FromHtml("#2B3530");
-        public static readonly Color Border = ColorTranslator.FromHtml("#3A3D47");
-        public static readonly Color Text = ColorTranslator.FromHtml("#E8E8EA");
-        public static readonly Color TextDim = ColorTranslator.FromHtml("#9A9CA5");
-        public static readonly Color Green = ColorTranslator.FromHtml("#4CC38A");
+        public static readonly Color Window = ColorTranslator.FromHtml("#121418");
+        public static readonly Color Panel = ColorTranslator.FromHtml("#1C1F26");
+        public static readonly Color PanelRaised = ColorTranslator.FromHtml("#252A33");
+        public static readonly Color Selected = ColorTranslator.FromHtml("#2C313B");
+        public static readonly Color Border = ColorTranslator.FromHtml("#343A46");
+        public static readonly Color Text = ColorTranslator.FromHtml("#E9ECF2");
+        public static readonly Color TextDim = ColorTranslator.FromHtml("#8F99A8");
+        public static readonly Color Green = ColorTranslator.FromHtml("#7FD18B");
         public static readonly Color Amber = ColorTranslator.FromHtml("#E0B341");
-        public static readonly Color Red = ColorTranslator.FromHtml("#E5484D");
-        public static readonly Color RedText = ColorTranslator.FromHtml("#FF8A8D");
-        public static readonly Color Blue = ColorTranslator.FromHtml("#5B9DFF");
+        public static readonly Color Red = ColorTranslator.FromHtml("#E0705F");
+        public static readonly Color RedText = ColorTranslator.FromHtml("#F09A8C");
+        public static readonly Color Blue = ColorTranslator.FromHtml("#6CB6FF");
+
+        // the Animator's gold accent and its card hues
+        public static readonly Color Accent = ColorTranslator.FromHtml("#F2C84B");
+        public static readonly Color OnAccent = ColorTranslator.FromHtml("#1C1F24");
+        public static readonly Color HueGame = Accent;
+        public static readonly Color HueMaps = ColorTranslator.FromHtml("#3FAE6A");
+        public static readonly Color HueLog = ColorTranslator.FromHtml("#4A8FE7");
+        public static readonly Font Tab = new Font("Segoe UI", 7.5f, FontStyle.Bold, GraphicsUnit.Point);
 
         public static readonly Font Body = new Font("Segoe UI", 10f, FontStyle.Regular, GraphicsUnit.Point);
         public static readonly Font BodySemi = new Font("Segoe UI Semibold", 10f, FontStyle.Regular, GraphicsUnit.Point);
@@ -78,6 +86,20 @@ namespace BodycamMapInstaller.Ui
             p.AddArc(r.X, r.Bottom - d, d, d, 90, 90);
             p.CloseFigure();
             return p;
+        }
+
+        /// <summary>The Animator's card: panel fill, thin line, a 3 px coloured top edge.</summary>
+        public static void Card(Graphics g, Rectangle r, Color hue)
+        {
+            using (GraphicsPath p = Rounded(r, Px(10)))
+            {
+                using (Brush b = new SolidBrush(Panel)) g.FillPath(b, p);
+                GraphicsState st = g.Save();
+                g.SetClip(p);
+                using (Brush b = new SolidBrush(hue)) g.FillRectangle(b, r.X, r.Y, r.Width + 1, Px(3));
+                g.Restore(st);
+                using (Pen pen = new Pen(Border)) g.DrawPath(pen, p);
+            }
         }
 
         public static Color Mix(Color a, Color b, float t)

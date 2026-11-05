@@ -8,7 +8,7 @@
 
 <div class="page">
   <div class="head">
-    <img src="logo.png" alt="" />
+    <canvas id="bcmiLogo" width="84" height="84" aria-label="Bodycam Map Importer logo"></canvas>
     <div>
       <h1>Bodycam Map Importer</h1>
       <div class="by">by <b>MrLovac</b></div>
@@ -26,6 +26,11 @@
   }
   else
   {
+    <div class="app">
+      <div><b>Easiest: the app.</b> Drop the map once and it goes straight into the game, with a backup of anything it replaces. No size limit. <span class="dim">Windows may warn about an unsigned app: More info &gt; Run anyway. <a href="https://github.com/Lovac/bodycam-map-importer" target="_blank" style="color:var(--accent)">Source on GitHub.</a></span></div>
+      <a class="btn main" href="@AppUrl" download>Get the app</a>
+    </div>
+    <div class="dim" style="margin-bottom:10px">Or use this page, for maps up to @MaxWebMb MB (a browser may not write into the game folder, so you copy the files in yourself):</div>
     <div class="steps">
       <div class="step">
         <div class="num">1</div>
@@ -129,6 +134,10 @@
 @code {
     // MrLovac's donation page (empty = no button)
     const string DonateUrl = "";
+    const string AppUrl = "BodycamMapInstaller.exe";
+    // a browser tab runs out of memory on big maps: measured 5 Nov 2026, 200 MB installs, 385 MB does not
+    const long MaxWebMb = 200;
+    bool logoOn;
     WebSession session;
     bool ready, busy, canPick;
     string outFolder, savedTo, writeError;
@@ -150,6 +159,14 @@
         Refresh();
         ready = true;
         StateHasChanged();
+        await Task.Yield();
+        await JS.InvokeVoidAsync("bcmiLogo.start", "bcmiLogo", 84);
+        logoOn = true;
+    }
+
+    async Task Working(bool on)
+    {
+        if (logoOn) await JS.InvokeVoidAsync("bcmiLogo.working", on);
     }
 
     void Refresh()
@@ -173,15 +190,26 @@
         if (busy) return;
         busy = true; last = null; writeError = null; savedTo = null;
         StateHasChanged();
+        await Working(true);
         await Task.Yield();
         try
         {
             IBrowserFile f = e.File;
-            byte[] data;
-            using (MemoryStream ms = new MemoryStream())
+            if (f.Size > (MaxWebMb + 5) * 1024 * 1024)
             {
-                await f.OpenReadStream(4L * 1024 * 1024 * 1024).CopyToAsync(ms);
-                data = ms.ToArray();
+                last = new StepResult { Ok = false, Message = "too big" };
+                last.Log.Add(new LogLine { Kind = "block", Text = f.Name + " is " + (f.Size / (1024 * 1024)) + " MB, too big for a browser tab. Get the app above: it takes any size, one drop." });
+                busy = false;
+                await Working(false);
+                StateHasChanged();
+                return;
+            }
+            // exactly its size, once: a growing stream doubles up to twice the map and runs the tab out of memory
+            byte[] data = new byte[f.Size];
+            using (Stream rs = f.OpenReadStream(f.Size))
+            {
+                int got = 0, n;
+                while (got < data.Length && (n = await rs.ReadAsync(data, got, data.Length - got)) > 0) got += n;
             }
             last = session.Install(f.Name, data, Ask);
             await Finish();
@@ -189,9 +217,10 @@
         catch (Exception ex)
         {
             last = new StepResult { Ok = false, Message = ex.Message };
-            last.Log.Add(new LogLine { Kind = "block", Text = "Something went wrong: " + ex.Message });
+            last.Log.Add(new LogLine { Kind = "block", Text = (ex is OutOfMemoryException ? "This map is too big for a browser tab. Get the app above: it takes any size, one drop." : "Something went wrong: " + ex.Message) });
         }
         busy = false;
+        await Working(false);
         StateHasChanged();
     }
 

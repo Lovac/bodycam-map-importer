@@ -181,9 +181,9 @@ namespace BodycamMapInstaller.Ui
                 if (i == selected)
                 {
                     using (Brush b = new SolidBrush(Enabled ? Theme.Selected : Theme.Mix(Theme.Panel, Theme.Selected, 0.5f))) g.FillRectangle(b, r);
-                    using (Brush b = new SolidBrush(Enabled ? Theme.Green : Theme.Border)) g.FillRectangle(b, 0, r.Y, Theme.Px(3), rh);
+                    using (Brush b = new SolidBrush(Enabled ? Theme.Accent : Theme.Border)) g.FillRectangle(b, 0, r.Y, Theme.Px(3), rh);
                 }
-                Color nameColor = !Enabled || m.Dim ? Theme.TextDim : Theme.Text;
+                Color nameColor = !Enabled || m.Dim ? Theme.TextDim : (i == selected ? Theme.Accent : Theme.Text);
                 string right = m.Right ?? "";
                 float rw = right.Length == 0 ? 0 : g.MeasureString(right, Theme.Small).Width + 2;
                 int top = r.Y + Theme.Px(6), line1 = Theme.BodySemi.Height;
@@ -199,7 +199,7 @@ namespace BodycamMapInstaller.Ui
                 }
                 Theme.Draw(g, m.Name, Theme.BodySemi, nameColor, new RectangleF(pad, top, Math.Max(0, nameRight - pad), line1), StringAlignment.Near, StringAlignment.Center);
                 Theme.Draw(g, m.Modes, Theme.Small, Enabled ? m.ModesColor : Theme.TextDim, new RectangleF(pad, top + line1 + Theme.Px(1), r.Width - pad * 2, Theme.Small.Height), StringAlignment.Near, StringAlignment.Center);
-                using (Pen p = new Pen(Theme.Window)) g.DrawLine(p, 0, r.Bottom - 1, r.Width, r.Bottom - 1);
+                using (Pen p = new Pen(Theme.Border)) g.DrawLine(p, Theme.Px(10), r.Bottom - 1, r.Width - Theme.Px(10), r.Bottom - 1);
             }
             if (more)
             {

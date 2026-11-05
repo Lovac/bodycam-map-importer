@@ -5,17 +5,28 @@
 A free Windows app that adds **custom maps to Bodycam**. Drop a map on the window and it shows up as its own card in
 **Play > Custom**, in every mode the map supports. No game map is replaced.
 
-The window still says "Bodycam Map Installer". It is the same app.
-
 Made by **MrLovac** (Prison V2P, Prison V3XXL and Elite Goon Squad on Nexus Mods). Fan-made: not made, supported or endorsed by
 Reissad Studio. Bodycam and its files belong to Reissad Studio. Use mods at your own risk.
 
 <p align="center"><img src="docs/app_window.jpg" width="720" alt="The app window with Prison V2P installed"></p>
 
-## Use it (no download)
+## Use it: one drop
 
-Open **https://lovac.github.io/bodycam-map-importer/** in Chrome, Edge or Firefox. It runs in your browser: nothing to
-install, nothing uploaded, and it never touches your game folder.
+1. Close Bodycam.
+2. Get **[BodycamMapInstaller.exe](https://lovac.github.io/bodycam-map-importer/BodycamMapInstaller.exe)** and open it.
+   Windows may show "Windows protected your PC" (new apps without a paid code signature always get this):
+   **More info** > **Run anyway**. The source is all here.
+3. Drop the map on the window: the `.zip` you downloaded, or its `.bcmap`, any size. That is the whole install.
+4. Start Bodycam > **Play > Custom** > pick a mode > your map > host a **private** match and add bots.
+
+Anything the app replaces or removes goes to a dated folder under **Backups** first, and comes with a RESTORE.txt. It
+never deletes. Extra paks a map comes with (`zMapName_Engine_9_P.pak`) install, hide and remove together with that map.
+
+## Or use the web page (no download)
+
+For maps up to the size the page shows. Open **https://lovac.github.io/bodycam-map-importer/** in Chrome, Edge or
+Firefox. It runs in your browser: nothing to install, nothing uploaded. Browsers may not write into the game folder, so
+you copy the finished files in yourself.
 
 1. Close Bodycam.
 2. Open the page. In Chrome or Edge, pick a folder for the finished files once (your Desktop is fine); other browsers
@@ -27,10 +38,6 @@ install, nothing uploaded, and it never touches your game folder.
 
 The page remembers the maps you added in this browser, so each new map keeps the others in the menu. To remove a map,
 click Remove: the page tells you which files to delete from Paks and gives you the new menu file.
-
-Prefer a program? `BodycamMapInstaller.exe` on the [Releases page](../../releases/latest) does the same thing and
-writes into the game folder itself. Windows may show "Windows protected your PC" for it (new apps without a paid code
-signature always get this): **More info** > **Run anyway**.
 
 <p align="center"><img src="docs/prison_v2p_in_game.jpg" width="720" alt="Prison V2P, a custom map installed with the app"></p>
 
@@ -67,7 +74,9 @@ Steps:
 4. Keep everything your level uses inside `Content/Sandbox/<Name>/` (your meshes, materials, textures).
 5. Save, close Unreal, and in Git Bash:
    `bash Scripts/newmap.sh <Name> "<Name players see>" <screenshot.png> 0.1.0`
-6. Share the `.bcmap` it writes to `Saved/maps/<Name>/out/`. Players drop it on this app.
+6. Share the `.bcmap` it writes to `Saved/maps/<Name>/out/`. Players drop it on this app. If your map needs an extra pak
+   (engine materials, say), name it `z<Name>_<Word>_9_P.pak` and put it in the same zip, or inside the `.bcmap` under
+   `paks/`: the app installs and removes it with the map, so players still do one drop.
 
 To update a map, run the same command with a higher version (0.1.1, 0.1.2 ...).
 
@@ -146,12 +155,12 @@ to rebuild the shared menu file. They are **not** in this repository; their name
 
 3. `dotnet build App\BodycamMapInstaller.csproj -c Release`
 
-The build is reproducible: with SDK 8.0.422 you get the same exe, byte for byte. Version 0.1.0 (5 October 2026), built
-from the `v0.1.0` tag (later commits add the web version in `Web/`, built with `dotnet publish Web -c Release`):
+The build is reproducible: with SDK 8.0.422 you get the same exe, byte for byte. Version 0.2.0 (5 November 2026), built
+from the `v0.2.0` tag (the web version in `Web/` is built with `dotnet publish Web -c Release`):
 
 | File | SHA-256 |
 |---|---|
-| `BodycamMapInstaller.exe` | `9a181d3decf17868bbaae61719993fcdd0cdd285e7873c6077b3bbac9eb640b2` |
+| `BodycamMapInstaller.exe` | `7ad432ab817b5f39597fb89c0e7409d08efe7a32f6b10242b2e98c314a5941d0` |
 | `BodycamMapInstaller.exe.config` | `051099983b896673909e01a1f631b6652abb88da95c9f06f3efef4be033091fa` |
 
 ## License

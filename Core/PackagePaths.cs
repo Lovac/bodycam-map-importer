@@ -101,6 +101,15 @@ namespace BodycamMapInstaller.Core
 
         public static string ContentPakName(string id) { return "z" + id + "_9_P.pak"; }
         public static string ModesPakName(string id) { return "z" + id + "_Modes_9_P.pak"; }
+        // 5 Nov 2026: a companion pak travels with one map and is removed with it: z<Id>_<Word>[_<order>]_P.pak (zFortuneHills_Engine_9_P.pak).
+        // Map ids have no underscore, so the name alone says which map owns the file.
+        public static bool IsCompanionPakName(string id, string fileName)
+        {
+            if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(fileName)) return false;
+            if (string.Equals(fileName, ContentPakName(id), StringComparison.OrdinalIgnoreCase) || string.Equals(fileName, ModesPakName(id), StringComparison.OrdinalIgnoreCase)) return false;
+            return Regex.IsMatch(fileName, "^z" + Regex.Escape(id) + @"_[A-Za-z][A-Za-z0-9]*(_\d+)?_P\.pak$", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        }
+
         public static string WrapperPath(string id, string mode) { return "GM_Maps/" + ModeFolder(mode) + "/" + ModePrefix(mode) + id; }
         public static string DaPath(string id, string mode) { return "UI/MetaData/DA_" + id + "_" + mode; }
         public static string DaPackage(string id, string mode) { return DaPrefix + "DA_" + id + "_" + mode; }

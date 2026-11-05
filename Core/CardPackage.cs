@@ -23,8 +23,85 @@ namespace BodycamMapInstaller.Core
 
     public enum DropKind { Package, Packages, LegacyPaks, LegacyPak, Project, NotAMap, Folder }
 
+    /// <summary>An extra pak that belongs to one map, inside its package or beside it.</summary>
+    public sealed class CompanionPak
+    {
+        public string Name;
+        public Func<Stream> Seekable;
+        public Action<Stream> CopyTo;
+    }
+
     public sealed class CardPackage : IDisposable
     {
+        public readonly List<CompanionPak> Companions = new List<CompanionPak>();
+
+        public void AddCompanion(string name, Func<Stream> seekable, Action<Stream> copyTo)
+        {
+            if (FindCompanion(name) != null) return;
+            CompanionPak c = new CompanionPak();
+            c.Name = name; c.Seekable = seekable; c.CopyTo = copyTo;
+            Companions.Add(c);
+        }
+
+        public CompanionPak FindCompanion(string name)
+        {
+            foreach (CompanionPak c in Companions) if (string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)) return c;
+            return null;
+        }
+
+        /// <summary>Companion paks lying in the same folder as a dropped map.</summary>
+        public void AddSiblingCompanions(string droppedPath, string skipDir)
+        {
+            if (Card == null || string.IsNullOrEmpty(Card.Id)) return;
+            string dir = Path.GetDirectoryName(Path.GetFullPath(droppedPath.TrimEnd('\\', '/')));
+            if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return;
+            if (skipDir != null && string.Equals(Path.GetFullPath(skipDir).TrimEnd('\\', '/'), dir.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase)) return;
+            string[] files;
+            try { files = Directory.GetFiles(dir, "z" + Card.Id + "_*_P.pak"); }
+            catch (Exception) { return; }
+            foreach (string f in files)
+            {
+                string n = Path.GetFileName(f), full = f;
+                if (!PackagePaths.IsCompanionPakName(Card.Id, n)) continue;
+                AddCompanion(n, delegate { return new FileStream(full, FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 16); },
+                    delegate(Stream dest) { using (FileStream fs = new FileStream(full, FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 16)) fs.CopyTo(dest, 1 << 20); });
+            }
+        }
+
+        static readonly string[] CompanionRoots = { "Engine/Content/", "Engine/Plugins/", "Bodycam/Plugins/" };
+        static readonly string[] CompanionExtensions = { ".uasset", ".uexp", ".ubulk", ".uptnl", ".umap", ".ushaderbytecode" };
+
+        /// <summary>A companion may hold engine or plugin content a map needs (shared with other maps: same engine, same files),
+        /// or files of its own under Bodycam/Content; never files of the game or of another map, never code or config.</summary>
+        public static void CheckCompanionPak(PakReader pr, string pakName, string mapId, string mapName, ValidationReport r, InstallContext ctx)
+        {
+            foreach (PakEntryInfo e in pr.Entries.Values)
+            {
+                if (e.Encrypted) r.Problem(mapName + ": " + pakName + " is encrypted; the game could not read it.");
+                string full = ((pr.MountPoint ?? "") + e.Path).Replace('\\', '/');
+                while (full.StartsWith("../", StringComparison.Ordinal)) full = full.Substring(3);
+                bool typeOk = false;
+                foreach (string x in CompanionExtensions) if (full.EndsWith(x, StringComparison.OrdinalIgnoreCase)) typeOk = true;
+                if (!typeOk) { r.Problem(mapName + ": " + pakName + " holds " + full + ", a kind of file a map may not bring."); continue; }
+                string rel = pr.ContentPath(e);
+                if (rel == null)
+                {
+                    bool rootOk = false;
+                    foreach (string root in CompanionRoots) if (full.StartsWith(root, StringComparison.OrdinalIgnoreCase)) rootOk = true;
+                    if (!rootOk) r.Problem(mapName + ": " + pakName + " puts " + full + " outside the places a map may use.");
+                    continue;
+                }
+                if (rel.StartsWith("GM_Maps/", StringComparison.OrdinalIgnoreCase) || rel.StartsWith("UI/", StringComparison.OrdinalIgnoreCase) || rel.StartsWith("GM/WeatherManaer/", StringComparison.OrdinalIgnoreCase))
+                    r.Problem(mapName + ": " + pakName + " holds " + rel + ", which belongs in the menu files or the wrapper pak.");
+                if (ctx == null) continue;
+                if (ctx.GamePaths != null && ctx.GamePaths.Contains(rel)) { r.Problem(mapName + " would replace files of Bodycam itself (" + rel + "). Not installed."); continue; }
+                InstalledMap owner = ctx.OwnerOf(rel);
+                if (owner != null && !string.Equals(owner.Id, mapId, StringComparison.OrdinalIgnoreCase) && !string.Equals(owner.Id, pakName, StringComparison.OrdinalIgnoreCase))
+                    r.Conflict(mapName + " uses files that belong to " + owner.Label + ". Remove " + owner.Label + " first.");
+            }
+            r.PakPaths[pakName] = pr.ContentPaths();
+        }
+
         public CardInfo Card;
         public string SourceName, SourcePath, SourceSha256;
         public long SourceSize;
@@ -230,7 +307,7 @@ namespace BodycamMapInstaller.Core
                     }
                     int bcmaps = 0, paks = 0;
                     foreach (string n in inner) if (n.EndsWith(".bcmap", StringComparison.OrdinalIgnoreCase)) bcmaps++; else paks++;
-                    if (bcmaps > 0 && paks == 0 && !other) return DropKind.Packages;
+                    if (bcmaps > 0 && !other) return DropKind.Packages;   // (5 Nov: paks beside a .bcmap are its companions, see Installer.InstallBundle)
                     if (paks > 0 && bcmaps == 0 && !other) return DropKind.LegacyPaks;
                     return DropKind.NotAMap;
                 }
@@ -378,6 +455,16 @@ namespace BodycamMapInstaller.Core
                 required.AddRange(ExpectedMenuEntries(false));
                 HashSet<string> allowed = new HashSet<string>(required, StringComparer.Ordinal);
                 allowed.Add("README.txt");
+                foreach (string e in Entries)
+                {
+                    if (!e.StartsWith("paks/", StringComparison.Ordinal) || e.IndexOf('/', 5) >= 0) continue;
+                    string cn = e.Substring(5), entry = e;
+                    if (!PackagePaths.IsCompanionPakName(c.Id, cn)) continue;
+                    allowed.Add(e);
+                    CompanionPak beside = FindCompanion(cn);
+                    if (beside != null) Companions.Remove(beside);   // (the copy inside the package wins)
+                    AddCompanion(cn, SeekableOpener(entry), delegate(Stream dest) { CopyEntryTo(entry, dest); });
+                }
                 if (c.TextureRelPath != null) allowed.Add("menu/" + c.TextureRelPath + ".ubulk");
                 List<string> unknown = new List<string>();
                 foreach (string e in Entries) if (!allowed.Contains(e)) unknown.Add(e);
@@ -418,6 +505,14 @@ namespace BodycamMapInstaller.Core
                     try { pr = PakReader.Open(opener, true); }
                     catch (Exception) { r.Problem(SourceName + " holds " + pakName + ", which is not a pak the installer can read."); continue; }
                     CheckPak(pr, pakName, modes, r, ctx, seenPaths);
+                }
+                foreach (CompanionPak cp in Companions)
+                {
+                    if (cp.Seekable == null) { r.PakChecksDeferred = true; continue; }
+                    PakReader pr;
+                    try { pr = PakReader.Open(cp.Seekable, true); }
+                    catch (Exception) { r.Problem(SourceName + " comes with " + cp.Name + ", which is not a pak the installer can read."); continue; }
+                    CheckCompanionPak(pr, cp.Name, c.Id, name, r, ctx);
                 }
 
                 if (ctx != null)

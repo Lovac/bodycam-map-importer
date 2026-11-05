@@ -14,7 +14,7 @@ namespace BodycamMapInstaller.Ui
         public DetailsView()
         {
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
-            BackColor = Theme.Window;
+            BackColor = Theme.Panel;
             AccessibleRole = AccessibleRole.StaticText;
             AccessibleName = "Select a map to see its details.";
         }

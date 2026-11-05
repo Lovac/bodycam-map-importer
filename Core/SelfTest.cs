@@ -735,6 +735,75 @@ namespace BodycamMapInstaller.Core
                 return backups + " backup folders with " + baks + " .bak files kept; the fake folder stays at " + root;
             });
 
+            Step("15b.companion_paks", delegate
+            {
+                // 5 Nov 2026: the real Nexus layout (Fortune Hills): one zip holding Map.bcmap + README.txt + zMap_Engine_9_P.pak
+                string dir = Path.Combine(work, "companion");
+                GameInstall g = MakeFakeGame(Path.Combine(root, "companion_game"));
+                Directory.CreateDirectory(dir);
+                string bcmap = Path.Combine(dir, "Prison.bcmap");
+                CardPackage.Create(bcmap, PrisonCard("1.0.0"), PrisonFiles(null, null));
+                byte[] enginePak = PakWriter.Build("zPrison_Engine_9_P.pak", "../../../Engine/Content/", new List<KeyValuePair<string, byte[]>> { new KeyValuePair<string, byte[]>("EngineMaterials/M_Test.uasset", Dummy("e", 300)), new KeyValuePair<string, byte[]>("EngineMaterials/M_Test.uexp", Dummy("e", 300)) });
+                string bundle = Path.Combine(dir, "bundle.zip");
+                using (FileStream fs = new FileStream(bundle, FileMode.CreateNew))
+                using (System.IO.Compression.ZipArchive za = new System.IO.Compression.ZipArchive(fs, System.IO.Compression.ZipArchiveMode.Create))
+                {
+                    foreach (KeyValuePair<string, byte[]> kv in new Dictionary<string, byte[]> { { "Prison.bcmap", File.ReadAllBytes(bcmap) }, { "README.txt", Encoding.ASCII.GetBytes("x") }, { "zPrison_Engine_9_P.pak", enginePak } })
+                        using (Stream s = za.CreateEntry(kv.Key).Open()) s.Write(kv.Value, 0, kv.Value.Length);
+                }
+                string live = Path.Combine(g.PaksDir, "zPrison_Engine_9_P.pak");
+                ListLog l = new ListLog(null);
+                Installer inst = NewInstaller(g, l, true);
+                Check(PackagePaths.IsCompanionPakName("Prison", "zPrison_Engine_9_P.pak") && !PackagePaths.IsCompanionPakName("Prison", "zPrison_9_P.pak") && !PackagePaths.IsCompanionPakName("Prison", "zPrison_Modes_9_P.pak") && !PackagePaths.IsCompanionPakName("Prison2", "zPrison_Engine_9_P.pak"), "name rule");
+                OperationResult a = inst.InstallDropped(bundle);
+                Detail(l);
+                Check(a.ExitCode == 0 && File.Exists(live) && File.Exists(Path.Combine(g.PaksDir, "zPrison_9_P.pak")), "bundle zip: exit " + a.ExitCode + " " + a.Message);
+                Check(Util.BytesEqual(File.ReadAllBytes(live), enginePak), "engine pak bytes");
+                Check(!Directory.Exists(Path.Combine(g.CardsDir, Path.Combine(".staging", "_drop"))) || Directory.GetFiles(Path.Combine(g.CardsDir, Path.Combine(".staging", "_drop"))).Length == 0, "the unpacked .bcmap was left behind");
+                IList<InstalledMap> listed = inst.ListInstalled();
+                Check(listed.Count == 1 && listed[0].Kind == MapKind.Card, "companion listed as its own row: " + listed.Count);
+                OperationResult p = inst.Pause();
+                Check(p.ExitCode == 0 && !File.Exists(live), "pause left the companion in place");
+                OperationResult q = inst.Resume();
+                Check(q.ExitCode == 0 && File.Exists(live), "resume did not bring the companion back");
+                OperationResult rm = inst.Remove("Prison");
+                Check(rm.ExitCode == 0 && !File.Exists(live) && File.Exists(Path.Combine(NewestBackup(g), "zPrison_Engine_9_P.pak.bak")), "remove: companion not in the backup");
+
+                // the .bcmap alone, its pak beside it (the Fortune Hills README flow)
+                File.WriteAllBytes(Path.Combine(dir, "zPrison_Engine_9_P.pak"), enginePak);
+                OperationResult b = NewInstaller(g, new ListLog(null), true).InstallDropped(bcmap);
+                Check(b.ExitCode == 0 && File.Exists(live), "bcmap + sibling: exit " + b.ExitCode + " " + b.Message);
+                NewInstaller(g, new ListLog(null), true).Remove("Prison");
+
+                // inside the package itself: one file, nothing beside it
+                File.Delete(Path.Combine(dir, "zPrison_Engine_9_P.pak"));
+                Dictionary<string, byte[]> inFiles = PrisonFiles(null, null);
+                inFiles["paks/zPrison_Engine_9_P.pak"] = enginePak;
+                string oneFile = MakeZip("Prison-onefile.bcmap", PrisonCard("1.0.0"), inFiles);
+                OperationResult c = NewInstaller(g, new ListLog(null), true).InstallDropped(oneFile);
+                Check(c.ExitCode == 0 && File.Exists(live), "pak in package: exit " + c.ExitCode + " " + c.Message);
+                NewInstaller(g, new ListLog(null), true).Remove("Prison");
+
+                // installed first, pak dropped afterwards, then the same pak again
+                OperationResult d = NewInstaller(g, new ListLog(null), true).InstallDropped(bcmap);
+                string loose = Path.Combine(dir, "drop"); Directory.CreateDirectory(loose);
+                string looseFile = Path.Combine(loose, "zPrison_Engine_9_P.pak"); File.WriteAllBytes(looseFile, enginePak);
+                OperationResult e = NewInstaller(g, new ListLog(null), true).InstallDropped(looseFile);
+                Check(d.ExitCode == 0 && e.ExitCode == 0 && File.Exists(live), "pak dropped alone: exit " + e.ExitCode + " " + e.Message);
+                OperationResult e2 = NewInstaller(g, new ListLog(null), true).InstallDropped(looseFile);
+                Check(e2.ExitCode == 0 && e2.NothingChanged, "second drop of the same pak changed something");
+                NewInstaller(g, new ListLog(null), true).Remove("Prison");
+
+                // never: code/config, a place outside the allowed roots
+                byte[] evil = PakWriter.Build("zPrison_Evil_9_P.pak", "../../../Engine/", new List<KeyValuePair<string, byte[]>> { new KeyValuePair<string, byte[]>("Config/BaseEngine.ini", Dummy("x", 50)) });
+                File.WriteAllBytes(Path.Combine(dir, "zPrison_Evil_9_P.pak"), evil);
+                ListLog le = new ListLog(null);
+                OperationResult f = NewInstaller(g, le, true).InstallDropped(bcmap);
+                Check(f.ExitCode != 0 && !File.Exists(Path.Combine(g.PaksDir, "zPrison_Evil_9_P.pak")) && !File.Exists(Path.Combine(g.PaksDir, "zPrison_9_P.pak")), "a config file in a companion was accepted");
+                File.Delete(Path.Combine(dir, "zPrison_Evil_9_P.pak"));
+                return "bundle zip, .bcmap + sibling, pak inside the package, pak dropped alone all install; listed as one map; hide/show/remove carry it; removed copy in Backups; config file refused";
+            });
+
             Step("16.locked_game_running", delegate
             {
                 string before = Snapshot(game.PaksDir);

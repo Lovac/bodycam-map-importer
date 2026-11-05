@@ -23,9 +23,9 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <Version>0.1.0</Version>
-    <FileVersion>0.1.0.0</FileVersion>
-    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <Version>0.2.0</Version>
+    <FileVersion>0.2.0.0</FileVersion>
+    <AssemblyVersion>0.2.0.0</AssemblyVersion>
     <Product>Bodycam Map Installer</Product>
     <AssemblyTitle>Bodycam Map Installer</AssemblyTitle>
     <Description>Installs and removes custom Bodycam maps, each with its own card in Play &gt; Custom.</Description>
@@ -48,6 +48,9 @@
   <ItemGroup>
     <EmbeddedResource Include="..\Core\BaseTables\**\*.uasset;..\Core\BaseTables\**\*.uexp">
       <LogicalName>BaseTables/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="logo\logo_map_128.png">
+      <LogicalName>logo_map.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="app.ico">
       <LogicalName>app.ico</LogicalName>

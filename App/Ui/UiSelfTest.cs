@@ -64,6 +64,17 @@ namespace BodycamMapInstaller.Ui
 
                 try
                 {
+                    using (LogoView lv = new LogoView())
+                    {
+                        bool turns, grey;
+                        double ms = lv.Bench(240, out turns, out grey);
+                        check("logo.animated", ms >= 0 && turns && grey && ms < 8, "the swirl turns: " + turns + "; starts grey: " + grey + "; " + ms.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " ms a frame at 24 fps (" + (ms * 24 / 10).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + "% of a core)");
+                    }
+                }
+                catch (Exception ex) { check("logo.animated", false, ex.ToString()); }
+
+                try
+                {
                     string tmp = Path.Combine(Path.GetTempPath(), "bcmi_ui_selftest_folder_" + DateTime.UtcNow.Ticks);
                     Directory.CreateDirectory(tmp);
                     string[] yes = { "Map.zip", "Map.BCMAP", "zMap_9_P.pak", tmp };

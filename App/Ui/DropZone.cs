@@ -25,7 +25,7 @@ namespace BodycamMapInstaller.Ui
         public DropZone()
         {
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.Selectable, true);
-            BackColor = Theme.PanelRaised;
+            BackColor = Theme.Panel;
             TabStop = true;
             AccessibleRole = AccessibleRole.PushButton;
             AccessibleName = "Drop a map here, or press Enter to pick a file";
@@ -126,14 +126,14 @@ namespace BodycamMapInstaller.Ui
             bool refusedLook = hotRefused || (state == DropState.Refused && !hot);
             bool doneLook = state == DropState.Done && !hot && !hotRefused;
             bool dim = state != DropState.Ready && state != DropState.Done && state != DropState.Refused && !hot && !hotRefused;
-            Color frame = hot ? Theme.Green : refusedLook ? Theme.Red : doneLook ? Theme.Mix(Theme.Border, Theme.Green, 0.7f)
+            Color frame = hot ? Theme.Accent : refusedLook ? Theme.Red : doneLook ? Theme.Mix(Theme.Border, Theme.Green, 0.7f)
                         : (state == DropState.Locked ? Theme.Red : (Focused && ShowFocusCues ? Theme.TextDim : Theme.Border));
-            Color glyph = hot || doneLook ? Theme.Green : refusedLook ? Theme.RedText
+            Color glyph = hot ? Theme.Accent : doneLook ? Theme.Green : refusedLook ? Theme.RedText
                         : (state == DropState.Locked ? Theme.Mix(Theme.Border, Theme.Red, 0.5f) : (dim ? Theme.Border : Theme.TextDim));
             Rectangle r = new Rectangle(1, 1, Width - 3, Height - 3);
             using (GraphicsPath p = Theme.Rounded(r, Theme.Px(14)))
             {
-                Color fill = hot || doneLook ? Theme.Selected : (dim ? Theme.Mix(Theme.PanelRaised, Theme.Window, 0.45f) : Theme.PanelRaised);
+                Color fill = hot || doneLook ? Theme.Selected : (dim ? Theme.Mix(Theme.Panel, Theme.Window, 0.45f) : Theme.Panel);
                 using (Brush b = new SolidBrush(fill)) g.FillPath(b, p);
                 using (Pen pen = new Pen(frame, Theme.Px(2)))
                 {
@@ -173,7 +173,7 @@ namespace BodycamMapInstaller.Ui
                         using (Brush b = new SolidBrush(Theme.Border)) g.FillPath(b, track);
                         int fw = Math.Max(bh, (int)(bw * progress));
                         using (GraphicsPath bar = Theme.Rounded(new Rectangle(bx, byy, fw, bh), bh / 2))
-                        using (Brush b = new SolidBrush(Theme.Green)) g.FillPath(b, bar);
+                        using (Brush b = new SolidBrush(Theme.Accent)) g.FillPath(b, bar);
                     }
                     else g.DrawLine(pen, cx - 26 * k, cy + 24 * k, cx + 26 * k, cy + 24 * k);
                 }
@@ -185,7 +185,7 @@ namespace BodycamMapInstaller.Ui
                     g.DrawLine(pen, cx - 26 * k, cy + 24 * k, cx + 26 * k, cy + 24 * k);
                 }
             }
-            string head = ReadyHead, sub = ReadySub, hint = "or click to browse";
+            string head = ReadyHead, sub = ReadySub, hint = "or click to browse  " + Theme.Dot + "  installs into the game, backs up what it replaces";
             Color headColor = dim ? Theme.TextDim : Theme.Text, subColor = Theme.TextDim;
             bool wrapSub = false;
             if (state == DropState.Busy) { head = "Working..."; sub = "Keep Bodycam closed until this finishes"; hint = ""; }
@@ -195,7 +195,7 @@ namespace BodycamMapInstaller.Ui
             if (state == DropState.Paused) { head = "Custom maps are hidden"; sub = "Show them again to install or remove maps"; hint = ""; }
             if (state == DropState.Done) { head = resultHead; sub = resultSub; hint = "or drop another map"; headColor = Theme.Green; subColor = Theme.Text; }
             if (state == DropState.Refused) { head = resultHead; sub = resultSub; hint = "or click to pick another file"; headColor = Theme.RedText; subColor = Theme.Text; wrapSub = true; }
-            if (hot) { head = hotHead; sub = ""; hint = ""; headColor = Theme.Green; }
+            if (hot) { head = hotHead; sub = ""; hint = ""; headColor = Theme.Accent; }
             if (hotRefused) { head = "Not a map file"; sub = "Drop the .zip you downloaded, or a .bcmap or .pak"; hint = ""; headColor = Theme.RedText; subColor = Theme.Text; wrapSub = false; }
             float y = cy + Theme.Px(40);
             float th = Theme.Title.GetHeight(g), bh2 = Theme.Body.GetHeight(g), sh = Theme.Small.GetHeight(g);

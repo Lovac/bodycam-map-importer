@@ -242,6 +242,13 @@ namespace BodycamMapInstaller.Core
                         else if (st.Paused && File.Exists(paused)) paks.Add(paused);
                         else missing.Add(pn);
                     }
+                    foreach (string extra in CompanionFiles(c.Id))
+                    {
+                        string en = Path.GetFileName(extra);
+                        if (en.EndsWith(".off", StringComparison.OrdinalIgnoreCase)) en = en.Substring(0, en.Length - 4);
+                        cardPaks.Add(en);
+                        paks.Add(extra);
+                    }
                     m.PakFiles = paks.ToArray();
                     foreach (string e in ExpectedCardMenuFiles(c))
                         if (!File.Exists(Path.Combine(dir, "menu", Util.OsPath(e)))) missing.Add("menu/" + e);
@@ -324,6 +331,23 @@ namespace BodycamMapInstaller.Core
             return list;
         }
 
+        /// <summary>The companion paks of a map that are on disk (hidden ones as .pak.off). A pak copied in by hand counts too.</summary>
+        List<string> CompanionFiles(string id)
+        {
+            List<string> found = new List<string>();
+            if (string.IsNullOrEmpty(id)) return found;
+            if (Directory.Exists(game.PaksDir))
+                foreach (string f in Directory.GetFiles(game.PaksDir, "z" + id + "_*_P.pak"))
+                    if (PackagePaths.IsCompanionPakName(id, Path.GetFileName(f))) found.Add(f);
+            if (Directory.Exists(game.PausedDir))
+                foreach (string f in Directory.GetFiles(game.PausedDir, "z" + id + "_*_P.pak.off"))
+                {
+                    string n = Path.GetFileName(f);
+                    if (PackagePaths.IsCompanionPakName(id, n.Substring(0, n.Length - 4))) found.Add(f);
+                }
+            return found;
+        }
+
         public const string NoMapInside = " has no map inside. Drop the .zip you downloaded, or the .pak in its Maps folder.";
 
         static OperationResult Merge(List<OperationResult> parts, string emptyMessage)
@@ -357,21 +381,16 @@ namespace BodycamMapInstaller.Core
                         CardPackage pkg;
                         try { pkg = CardPackage.Open(path); }
                         catch (PackageException ex) { log.Block(ex.Message); return Result(ExitRefused, ex.Message); }
-                        using (pkg) return Install(pkg);
+                        using (pkg)
+                        {
+                            pkg.AddSiblingCompanions(path, game.PaksDir);
+                            return Install(pkg);
+                        }
                     }
                 case DropKind.Packages:
-                    {
-                        log.Info(name + " holds " + inner.Count + " maps; installing them one by one.");
-                        IList<CardPackage> pkgs;
-                        try { pkgs = CardPackage.OpenAll(path); }
-                        catch (PackageException ex) { log.Block(ex.Message); return Result(ExitRefused, ex.Message); }
-                        List<OperationResult> results = new List<OperationResult>();
-                        foreach (CardPackage p in pkgs)
-                            using (p) results.Add(Install(p));
-                        return Merge(results, "empty");
-                    }
+                    return InstallBundle(path, name, inner);
                 case DropKind.LegacyPak:
-                    return InstallLegacyPak(path);
+                    return InstallLoosePak(path);
                 case DropKind.LegacyPaks:
                     {
                         List<OperationResult> results = new List<OperationResult>();
@@ -395,16 +414,26 @@ namespace BodycamMapInstaller.Core
                     {
                         if (inner.Count > 1) log.Info(name + " holds " + inner.Count + " maps; installing them one by one.");
                         List<OperationResult> results = new List<OperationResult>();
+                        List<string> idsHere = new List<string>();
+                        foreach (string item in inner)
+                        {
+                            if (item.EndsWith(".pak", StringComparison.OrdinalIgnoreCase)) continue;
+                            try { using (CardPackage peek = CardPackage.Open(item)) idsHere.Add(peek.Card.Id); }
+                            catch (PackageException) { }
+                        }
                         foreach (string item in inner)
                         {
                             OperationResult r;
-                            if (item.EndsWith(".pak", StringComparison.OrdinalIgnoreCase) && File.Exists(item)) r = InstallLegacyPak(item);
+                            bool companionHere = false;
+                            foreach (string id in idsHere) if (PackagePaths.IsCompanionPakName(id, Path.GetFileName(item))) companionHere = true;
+                            if (companionHere) continue;   // (installed with its map: AddSiblingCompanions)
+                            if (item.EndsWith(".pak", StringComparison.OrdinalIgnoreCase) && File.Exists(item)) r = InstallLoosePak(item);
                             else
                             {
                                 CardPackage pkg = null;
                                 try { pkg = CardPackage.Open(item); }
                                 catch (PackageException ex) { log.Block(ex.Message); r = Result(ExitRefused, ex.Message); }
-                                if (pkg != null) { using (pkg) r = Install(pkg); }
+                                if (pkg != null) { using (pkg) { pkg.AddSiblingCompanions(item, game.PaksDir); r = Install(pkg); } }
                                 else r = Result(ExitRefused, "not a package");
                             }
                             results.Add(r);
@@ -419,6 +448,121 @@ namespace BodycamMapInstaller.Core
                     log.Block(name + NoMapInside);
                     return Result(ExitRefused, "not a map");
             }
+        }
+
+        /// <summary>A zip with one or more .bcmap files, and maybe their companion paks. The .bcmap is unpacked next to the game
+        /// first, never into memory: real maps run to several GB (Fortune Hills: 3.4 GB).</summary>
+        OperationResult InstallBundle(string path, string name, List<string> inner)
+        {
+            List<string> maps = new List<string>(), paks = new List<string>();
+            foreach (string e in inner)
+            {
+                if (!PackagePaths.IsSafeEntryName(e)) { log.Block(name + " has files the installer does not know. Ask its author for a newer version."); return Result(ExitRefused, "unsafe"); }
+                if (e.EndsWith(".bcmap", StringComparison.OrdinalIgnoreCase)) maps.Add(e); else paks.Add(e);
+            }
+            maps.Sort(StringComparer.OrdinalIgnoreCase);
+            if (maps.Count > 1) log.Info(name + " holds " + maps.Count + " maps; installing them one by one.");
+            string temp = Path.Combine(game.CardsDir, Path.Combine(".staging", "_drop"));
+            List<OperationResult> results = new List<OperationResult>();
+            List<string> used = new List<string>();
+            using (ZipSource z = new ZipSource(path))
+            {
+                foreach (string entry in maps)
+                {
+                    string tmp = Path.Combine(temp, Path.GetFileName(entry));
+                    try
+                    {
+#if !BCMI_WEB
+                        DriveInfo drive = new DriveInfo(Path.GetPathRoot(game.PaksDir));
+                        long need = 3 * z.Length(entry);
+                        if (drive.IsReady && drive.AvailableFreeSpace < need)
+                        {
+                            log.Block("There is not enough free space on " + drive.Name + " (" + (need / (1024 * 1024) + 1) + " MB needed).");
+                            results.Add(Result(ExitRefused, "space"));
+                            continue;
+                        }
+#endif
+                        Directory.CreateDirectory(temp);
+                        using (FileStream fs = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None, 1 << 20)) z.CopyTo(entry, fs);
+                        CardPackage p;
+                        try { p = CardPackage.Open(tmp); }
+                        catch (PackageException ex) { log.Block(ex.Message); results.Add(Result(ExitRefused, ex.Message)); continue; }
+                        using (p)
+                        {
+                            foreach (string pak in paks)
+                            {
+                                string pn = Path.GetFileName(pak), pe = pak;
+                                if (!PackagePaths.IsCompanionPakName(p.Card.Id, pn)) continue;
+                                used.Add(pak);
+                                p.AddCompanion(pn, z.SeekableOpener(pak), delegate(Stream dest) { z.CopyTo(pe, dest); });
+                            }
+                            results.Add(Install(p));
+                        }
+                    }
+                    catch (IOException ex)
+                    {
+                        log.Block(name + " was not installed. " + Sentence(ex, "The installer could not unpack it.") + " Nothing changed.");
+                        results.Add(Result(ExitRefused, "unpack"));
+                    }
+                    catch (UnauthorizedAccessException ex)
+                    {
+                        log.Block(name + " was not installed. " + Sentence(ex, "The installer could not unpack it.") + " Nothing changed.");
+                        results.Add(Result(ExitRefused, "unpack"));
+                    }
+                    finally
+                    {
+                        try { if (File.Exists(tmp)) File.Delete(tmp); } catch (Exception) { }
+                    }
+                }
+                foreach (string pak in paks)
+                    if (!used.Contains(pak)) log.Warn(Path.GetFileName(pak) + " was left out: its name does not match a map in " + name + ".");
+            }
+            return Merge(results, "empty");
+        }
+
+        /// <summary>A .pak dropped on its own: a companion of an installed map joins that map, anything else is an older single-file map.</summary>
+        OperationResult InstallLoosePak(string path)
+        {
+            string fn = Path.GetFileName(path);
+            foreach (InstalledMap m in ListInstalled())
+                if (m.Kind == MapKind.Card && PackagePaths.IsCompanionPakName(m.Id, fn)) return AddCompanionToInstalled(path, m);
+            return InstallLegacyPak(path);
+        }
+
+        OperationResult AddCompanionToInstalled(string path, InstalledMap map)
+        {
+            string fn = Path.GetFileName(path);
+            if (MenuState.Load(game).Paused) { log.Warn(PausedLine); return Result(ExitRefused, "paused"); }
+            string live = Path.Combine(game.PaksDir, fn);
+            OperationResult r;
+            if (File.Exists(live) && string.Equals(Util.Sha1File(live), Util.Sha1File(path), StringComparison.OrdinalIgnoreCase))
+            {
+                log.Info(fn + " is already part of " + map.Label + ". Nothing changed.");
+                r = Result(ExitOk, "already");
+                r.NothingChanged = true;
+                r.Outcomes.Add(Outcome(MapKind.Card, map.Id, map.Label, PackagePaths.PreferredModeLongName(map.Modes), true));
+                return r;
+            }
+            ValidationReport report = new ValidationReport();
+            try { CardPackage.CheckCompanionPak(PakReader.Open(path), fn, map.Id, map.Label, report, Context()); }
+            catch (Exception) { report.Problem(fn + " is not a pak the installer can read."); }
+            if (report.Problems.Count > 0) { ReportRefusal(fn, report); return Result(ExitRefused, report.Problems[0]); }
+            Backup backup = Backup.Begin(game);
+            backup.Log = log;
+            try
+            {
+                string part = live + ".part";
+                if (File.Exists(part)) backup.Move(part, "unfinished step from an earlier run");
+                File.Copy(path, part);
+                if (File.Exists(live)) backup.Move(live, "older copy of " + fn);
+                Util.MoveFile(part, live);
+            }
+            finally { backup.Finish(); }
+            log.Good("Added " + fn + " to " + map.Label + ".");
+            r = Result(ExitOk, "companion added");
+            r.BackupStamp = backup.Count > 0 ? backup.Stamp : null;
+            r.Outcomes.Add(Outcome(MapKind.Card, map.Id, map.Label, PackagePaths.PreferredModeLongName(map.Modes), false));
+            return r;
         }
 
         void ReportRefusal(string file, ValidationReport report)
@@ -446,7 +590,9 @@ namespace BodycamMapInstaller.Core
             InstalledMap existing = ctx.FindCard(c.Id);
             if (existing != null)
             {
-                if (existing.Version == c.Version && existing.Problems.Count == 0)
+                bool companionMissing = false;
+                foreach (CompanionPak cp in pkg.Companions) if (!File.Exists(Path.Combine(game.PaksDir, cp.Name))) companionMissing = true;
+                if (existing.Version == c.Version && existing.Problems.Count == 0 && !companionMissing)
                 {
                     log.Info(name + " " + c.Version + " is already installed. Nothing changed.");
                     OperationResult same = Result(ExitOk, "already installed");
@@ -531,8 +677,9 @@ namespace BodycamMapInstaller.Core
         {
             CardInfo c = pkg.Card;
             string name = pkg.MapName;
-            string[] pakNames = { PackagePaths.ContentPakName(c.Id), PackagePaths.ModesPakName(c.Id) };
-            int total = 6, step = 0;
+            List<string> pakNames = new List<string> { PackagePaths.ContentPakName(c.Id), PackagePaths.ModesPakName(c.Id) };
+            foreach (CompanionPak cp in pkg.Companions) pakNames.Add(cp.Name);
+            int total = 4 + pakNames.Count, step = 0;
             List<string> parts = new List<string>();
             string staging = Path.Combine(game.CardsDir, ".staging", c.Id);
 
@@ -546,7 +693,8 @@ namespace BodycamMapInstaller.Core
                     using (FileStream fs = new FileStream(part, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1 << 20))
                     {
                         parts.Add(part);
-                        pkg.CopyEntryTo("paks/" + pn, fs);
+                        CompanionPak companion = pkg.FindCompanion(pn);
+                        if (companion != null) companion.CopyTo(fs); else pkg.CopyEntryTo("paks/" + pn, fs);
                         fs.Flush(true);
                     }
                     PakReader pr;
@@ -559,7 +707,8 @@ namespace BodycamMapInstaller.Core
                     if (report.PakChecksDeferred && !report.PakPaths.ContainsKey(pn))
                     {
                         ValidationReport late = new ValidationReport();
-                        pkg.CheckPak(pr, pn, pn == pakNames[1], late, ctx, null);
+                        if (pkg.FindCompanion(pn) != null) CardPackage.CheckCompanionPak(pr, pn, c.Id, name, late, ctx);
+                        else pkg.CheckPak(pr, pn, pn == pakNames[1], late, ctx, null);
                         if (late.Problems.Count > 0)
                         {
                             foreach (string p in late.Problems) log.Detail(p);
@@ -616,7 +765,7 @@ namespace BodycamMapInstaller.Core
                     foreach (string f in m.PakFiles)
                         if (File.Exists(f)) backup.Move(f, "replaced by " + name + " " + c.Version);
                 Fault("install.moves");
-                for (int i = 0; i < pakNames.Length; i++)
+                for (int i = 0; i < pakNames.Count; i++)
                 {
                     string live = Path.Combine(game.PaksDir, pakNames[i]);
                     Util.MoveFile(parts[i], live);
@@ -665,6 +814,7 @@ namespace BodycamMapInstaller.Core
             else
             {
                 log.Good("Installed " + name + " " + c.Version + ". Start Bodycam and look in Play > Custom > " + c.FirstModeLongName + ".");
+                log.Dim(backup.Count > 0 ? "Everything it replaced is saved in Backups (" + backup.Stamp + ")." : "Nothing of yours was replaced, so there was nothing to back up.");
                 r = Result(ExitOk, "installed");
             }
             log.Progress(++step, total, "");
@@ -924,6 +1074,8 @@ namespace BodycamMapInstaller.Core
                         string live = Path.Combine(game.PaksDir, pn);
                         if (File.Exists(live)) backup.Move(live, "removed " + target.Label);
                     }
+                    foreach (string extra in CompanionFiles(target.Id))
+                        if (File.Exists(extra)) backup.Move(extra, "removed " + target.Label);
                     backup.Move(target.CardDir, "removed " + target.Label);
                 }
                 else

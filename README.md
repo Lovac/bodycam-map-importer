@@ -155,12 +155,12 @@ to rebuild the shared menu file. They are **not** in this repository; their name
 
 3. `dotnet build App\BodycamMapInstaller.csproj -c Release`
 
-The build is reproducible: with SDK 8.0.422 you get the same exe, byte for byte. Version 0.2.0 (5 November 2026), built
-from the `v0.2.0` tag (the web version in `Web/` is built with `dotnet publish Web -c Release`):
+The build is reproducible: with SDK 8.0.422 you get the same exe, byte for byte. Version 0.2.1 (6 November 2026), built
+from the `v0.2.1` tag (the web version in `Web/` is built with `dotnet publish Web -c Release`):
 
 | File | SHA-256 |
 |---|---|
-| `BodycamMapInstaller.exe` | `7ad432ab817b5f39597fb89c0e7409d08efe7a32f6b10242b2e98c314a5941d0` |
+| `BodycamMapInstaller.exe` | `02a5b355d3de0e2004a6318e7fc3d7d3fc623c925fe044a65e4cef929bee79f8` |
 | `BodycamMapInstaller.exe.config` | `051099983b896673909e01a1f631b6652abb88da95c9f06f3efef4be033091fa` |
 
 ## License

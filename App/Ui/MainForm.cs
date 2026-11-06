@@ -42,9 +42,9 @@ namespace BodycamMapInstaller.Ui
     partial class MainForm : Form
     {
 #if BCMI_DEV
-        public const string AppVersion = "v0.2 (dev build)";
+        public const string AppVersion = "v0.2.1 (dev build)";
 #else
-        public const string AppVersion = "v0.2";
+        public const string AppVersion = "v0.2.1";
 #endif
         public const string HideLink = "Hide custom maps (for online play)";
         public const string ShowLink = "Show custom maps again";
@@ -323,6 +323,17 @@ namespace BodycamMapInstaller.Ui
             catch (InvalidOperationException) { }
         }
 
+        /// <summary>For the UI selftest: the logo's box must touch no text around it.</summary>
+        public bool LogoIsClear(out string detail)
+        {
+            PerformLayout();
+            List<string> hits = new List<string>();
+            foreach (Label l in new Label[] { title, byLine, gameCaption, version })
+                if (logo.Bounds.IntersectsWith(new Rectangle(l.Location, l.PreferredSize))) hits.Add(l.Text);
+            detail = "logo " + logo.Width + "x" + logo.Height + " bottom " + logo.Bottom + ", GAME top " + gameCaption.Top + ", title left " + title.Left + (hits.Count == 0 ? "" : "; overlaps: " + string.Join(", ", hits.ToArray()));
+            return hits.Count == 0;
+        }
+
         protected override void OnLayout(LayoutEventArgs e)
         {
             base.OnLayout(e);
@@ -330,14 +341,14 @@ namespace BodycamMapInstaller.Ui
             int m = Theme.Px(24), gap = Theme.Px(14), rightW = Theme.Px(380), logH = Theme.Px(92), pad = Theme.Px(10);
             int w = ClientSize.Width, h = ClientSize.Height;
             int btnH = Theme.Body.Height + Theme.Px(14);
-            int logoS = Theme.Px(58);
-            logo.SetBounds(m - Theme.Px(10), Theme.Px(6), logoS, logoS);
+            int logoS = Theme.Px(44);
+            logo.SetBounds(m - Theme.Px(10), Theme.Px(8), logoS, logoS);
             title.Location = new Point(logo.Right + Theme.Px(6), Theme.Px(10));
             byLine.Location = new Point(logo.Right + Theme.Px(8), title.Bottom - Theme.Px(1));
             version.Location = new Point(w - m - version.PreferredWidth, Theme.Px(22));
 
             // the game card
-            int y = logo.Bottom + Theme.Px(12);
+            int y = Theme.Px(76);   // fixed: the header's height, so the logo's size never moves the cards
             int bw = browse.Preferred;
             browse.SetBounds(w - m - bw, y + Theme.Px(3), bw, btnH);
             int textW = browse.Left - gap - m;

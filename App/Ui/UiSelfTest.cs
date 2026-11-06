@@ -58,6 +58,8 @@ namespace BodycamMapInstaller.Ui
                         Rectangle wa = Screen.FromPoint(Cursor.Position).WorkingArea;
                         bool fits = f.Height <= wa.Height && f.Width <= wa.Width;
                         check("window.fits_the_screen", fits, "outside " + f.Width + "x" + f.Height + ", client " + f.ClientSize.Width + "x" + f.ClientSize.Height + ", working area " + wa.Width + "x" + wa.Height + ", minimum " + f.MinimumSize.Width + "x" + f.MinimumSize.Height + " (design 960x660 at " + Theme.Scale + " = " + Theme.Px(960) + "x" + Theme.Px(660) + " client)");
+                        string logoDetail;
+                        check("logo.touches_no_text", f.LogoIsClear(out logoDetail), logoDetail);
                     }
                 }
                 catch (Exception ex) { check("window.fits_the_screen", false, ex.ToString()); }

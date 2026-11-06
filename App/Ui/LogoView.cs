@@ -14,7 +14,8 @@ namespace BodycamMapInstaller.Ui
 {
     class LogoView : Control
     {
-        const float Spin = 0.35f, Wave = 0.30f, Twist = 5.5f, BackLight = 0.24f;
+        // Same formula as the Studio. Spin and Wave are stronger than its 0.35 / 0.30: at 44 px those read as a still ball (measured 2.5 vs 7.0 luminance change a second).
+        const float Spin = 0.70f, Wave = 0.45f, Twist = 5.5f, BackLight = 0.24f;
         const int Fps = 24, MaxSparks = 40;
         static readonly float[,] Bands = { { 120, 72, 0 }, { 176, 112, 0 }, { 222, 156, 0 }, { 255, 203, 5 }, { 255, 220, 70 }, { 255, 236, 140 }, { 255, 250, 214 } };
         static readonly float[] BColor = { 34, 16, 4 }, BShadow = { 150, 78, 10 };

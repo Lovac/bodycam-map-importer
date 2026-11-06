@@ -109,7 +109,7 @@ namespace BodycamMapInstaller.Core
 
     public static class Util
     {
-        public const string InstallerVersion = "0.2.0";
+        public const string InstallerVersion = "0.2.1";
         public static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
         static readonly Regex GamePak = new Regex(@"^pakchunk\d+(_s\d+)?-Windows\.pak$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
